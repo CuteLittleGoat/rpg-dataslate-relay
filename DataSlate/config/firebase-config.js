@@ -6,10 +6,16 @@
 // WAŻNE WDROŻENIE: Każda grupa (każdy serwer) powinna mieć własny projekt Firebase i własny komplet kluczy poniżej.
 // IMPORTANT DEPLOYMENT: Each group (each server) should use its own Firebase project and its own full key set below.
 window.firebaseConfig = {
-  apiKey: "INSERT_YOUR_API_KEY",
-  authDomain: "INSERT_YOUR_AUTH_DOMAIN",
-  projectId: "INSERT_YOUR_PROJECT_ID",
-  storageBucket: "INSERT_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "INSERT_YOUR_MESSAGING_SENDER_ID",
-  appId: "INSERT_YOUR_APP_ID",
+  apiKey: "AIzaSyDA0TbxOwO2rUbSIx7hm-lsbYVTmyepTZc",
+
+  authDomain: "rpg-dataslate-relay.firebaseapp.com",
+
+  projectId: "rpg-dataslate-relay",
+
+  storageBucket: "rpg-dataslate-relay.firebasestorage.app",
+
+  messagingSenderId: "874318505488",
+
+  appId: "1:874318505488:web:2366bc5a0adff7b7b44c95"
+
 };
