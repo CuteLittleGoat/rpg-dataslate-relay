@@ -1,20 +1,20 @@
-# Firebase Setup Guide for DataSlate Preview
+# DataSlate Relay — Self-hosting and Firebase Setup Guide
 
-This guide explains how to connect the **DataSlate Preview** app to Firebase.
+This guide explains how to set up your own copy of **DataSlate Relay** and connect it to Firebase.
 
-It is written for a person who has never used Firebase before. Follow the steps in order.
+It is written for a person who wants to copy the app to their own server, GitHub Pages site, or another static hosting provider, and use it independently.
 
 The screenshots used in this guide are available here:
 
 [Firebase_Screens folder](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/01.jpg)
 
-Important: this guide uses a very simple setup for a preview version. It is easy to follow, but it is not secure.
+The screenshots are examples. They may show the original repository name or example values. When setting up your own copy, use your own repository name, hosting address, and Firebase project values.
 
 ---
 
 # Important warning about security
 
-This guide uses simple Firebase Rules for a preview version.
+This guide uses simple Firebase Rules for an easy first setup.
 
 These Rules are **not secure**.
 
@@ -23,11 +23,72 @@ They allow anyone who knows the Firebase project configuration to read and write
 Use this setup only for:
 
 - a test Firebase account,
-- a preview version,
+- a demo version,
 - a project with no private data,
-- a temporary demo.
+- a temporary game-table tool.
 
 Do **not** use these Rules for a real production app with private or user data.
+
+If you want to use DataSlate Relay with private data, user accounts, or long-term public hosting, you should replace these Rules with a proper authenticated Firebase security model.
+
+---
+
+# What you are setting up
+
+DataSlate Relay is a static web app.
+
+It can be hosted on:
+
+- GitHub Pages,
+- your own web server,
+- another static hosting provider.
+
+Firebase is used as the relay database between:
+
+- the GM panel,
+- the player-facing DataSlate screen.
+
+Each independent copy of the app should use its own Firebase project and its own Firebase configuration.
+
+---
+
+# Part 0 — Copy and host the app
+
+## Step 0 — Copy the repository or app files
+
+Copy this project to your own place first.
+
+You can do this in one of these ways:
+
+1. Fork the repository on GitHub.
+2. Download the repository and upload it to your own server.
+3. Copy the `DataSlate` folder into your own static website project.
+
+Keep the internal folder structure unchanged.
+
+The launcher should remain here:
+
+    DataSlate/index.html
+
+The Firebase configuration file should remain here:
+
+    DataSlate/config/firebase-config.js
+
+Do not move these files unless you also update all related paths in the app.
+
+If you use GitHub Pages, your launcher address may look like this:
+
+    https://YOUR_USERNAME.github.io/YOUR_REPOSITORY_NAME/DataSlate/index.html
+
+If you use your own server, your launcher address may look like this:
+
+    https://YOUR_DOMAIN/DataSlate/index.html
+
+or:
+
+    https://YOUR_DOMAIN/YOUR_FOLDER/DataSlate/index.html
+
+Use your own final address later when testing the app.
 
 ---
 
@@ -35,7 +96,9 @@ Do **not** use these Rules for a real production app with private or user data.
 
 ## Step 1 — Open Firebase
 
-Open Firebase in your browser.
+Open Firebase in your browser:
+
+    https://console.firebase.google.com/
 
 You should see the Firebase welcome page.
 
@@ -59,15 +122,21 @@ Find the field named:
 
 Click inside that field.
 
-Type this project name:
+Type a project name.
+
+For example:
 
     RPG-DataSlate-Relay
 
 Under the project name, Firebase will also show the project ID.
 
-It should look similar to this:
+It may look similar to this:
 
     rpg-dataslate-relay
+
+Your exact project ID may be different. This is normal.
+
+If Firebase says the project ID is already taken, choose a unique name.
 
 Find the checkbox named:
 
@@ -155,9 +224,7 @@ Screenshot: [06.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 After clicking **Continue**, you will enter the Firebase project page.
 
-The project name should be visible near the top:
-
-    RPG-DataSlate-Relay
+The project name should be visible near the top.
 
 Under the project name, find the button:
 
@@ -197,17 +264,21 @@ Find the field named:
 
 Click inside that field.
 
-Type:
+Type a name for your web app.
 
-    DataSlate_Preview
+For example:
+
+    DataSlate_Relay
 
 Find the checkbox named:
 
 **Also set up Firebase Hosting for this app**
 
-Leave this checkbox unchecked.
+Leave this checkbox unchecked unless you specifically want to use Firebase Hosting.
 
-You do not need Firebase Hosting for this guide, because the app is already hosted on GitHub Pages.
+You do not need Firebase Hosting for this guide.
+
+DataSlate Relay is a static web app. You can host it on GitHub Pages, your own server, or another static hosting provider.
 
 Click:
 
@@ -268,9 +339,7 @@ Screenshot: [11.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 A small panel will open.
 
-It will show your app:
-
-**DataSlate_Preview**
+It will show your app.
 
 On the right side of that app row, click the small gear icon.
 
@@ -292,40 +361,37 @@ Screenshot: [13.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 ---
 
-# Part 3 — Add Firebase configuration to GitHub
+# Part 3 — Add Firebase configuration to your copy of DataSlate Relay
 
-## Step 11 — Open the configuration file in GitHub
+## Step 11 — Open the configuration file
 
-Open your GitHub repository.
+Open your copy of the DataSlate Relay files.
 
 Go to this file:
 
     DataSlate/config/firebase-config.js
 
-Before editing, the file contains placeholder values.
+This file contains the Firebase configuration used by the GM panel and the DataSlate screen.
 
-They look like this:
+Depending on the version you copied, the file may contain placeholder values, old values, or example values.
 
-    window.firebaseConfig = {
-      apiKey: "INSERT_YOUR_API_KEY",
-      authDomain: "INSERT_YOUR_AUTH_DOMAIN",
-      projectId: "INSERT_YOUR_PROJECT_ID",
-      storageBucket: "INSERT_YOUR_STORAGE_BUCKET",
-      messagingSenderId: "INSERT_YOUR_MESSAGING_SENDER_ID",
-      appId: "INSERT_YOUR_APP_ID",
-    };
-
-Screenshot: [14.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/14.jpg)
+You must replace them with your own Firebase values.
 
 ---
 
-## Step 12 — Replace the placeholder values
+## Step 12 — Replace the Firebase values
 
 Edit the file:
 
     DataSlate/config/firebase-config.js
 
-Replace the placeholder values with the values copied from Firebase.
+Firebase gives you a configuration block that starts like this:
+
+    const firebaseConfig = {
+
+DataSlate Relay needs the same values, but stored in:
+
+    window.firebaseConfig
 
 Important: keep the beginning exactly like this:
 
@@ -334,10 +400,6 @@ Important: keep the beginning exactly like this:
 Do **not** change it to this:
 
     const firebaseConfig = {
-
-The DataSlate app needs the configuration to be stored in:
-
-    window.firebaseConfig
 
 The final file should look similar to this:
 
@@ -350,13 +412,17 @@ The final file should look similar to this:
       appId: "YOUR_APP_ID"
     };
 
-Replace the `YOUR_...` values with the real values from Firebase.
+Replace the `YOUR_...` values with the real values copied from Firebase.
 
 Save the file.
 
-Commit the change to GitHub.
+If you use GitHub Pages, commit the changed file to your repository.
 
-When the file is updated correctly, it should show real Firebase values instead of `INSERT_YOUR_...`.
+If you use your own server, upload the changed file to your server.
+
+When the file is updated correctly, it should contain your own Firebase values.
+
+Screenshot: [14.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/14.jpg)
 
 Screenshot: [15.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/15.jpg)
 
@@ -396,7 +462,7 @@ In step 1, named **Select edition**, choose:
 
 **Standard edition**
 
-Do not choose **Enterprise edition**.
+Do not choose **Enterprise edition** unless you know that you need it.
 
 Click:
 
@@ -416,7 +482,9 @@ Find the field named:
 
 **Location**
 
-Choose:
+Choose the location closest to your users.
+
+For users in Europe, you can choose:
 
     eur3 (Europe)
 
@@ -456,13 +524,13 @@ This is normal.
 
 Do not click **Start collection**.
 
-The DataSlate app will create the needed data automatically when you send the first test message.
+The DataSlate Relay app will create the needed data automatically when you send the first test message.
 
 Screenshot: [20.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/20.jpg)
 
 ---
 
-# Part 5 — Set simple preview Rules
+# Part 5 — Set simple Firebase Rules
 
 ## Step 18 — Open the Rules tab
 
@@ -514,25 +582,29 @@ Firebase will show a red warning.
 
 The warning says that the Rules are public.
 
-This is expected for this simple preview setup.
+This is expected for this simple setup.
 
 These Rules have no real protection.
 
-Use them only for a test project with no private data.
+Use them only for a test project, a demo, or a game-table tool with no private data.
 
 Screenshot: [23.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Firebase_Screens/23.jpg)
 
 ---
 
-# Part 6 — Test the DataSlate app
+# Part 6 — Test your DataSlate Relay instance
 
-## Step 21 — Open the DataSlate launcher
+## Step 21 — Open your DataSlate Relay launcher
 
-Open the DataSlate launcher in your browser.
+Open your hosted DataSlate Relay launcher in your browser.
 
-Use this address:
+If you use GitHub Pages, the address may look like this:
 
-    https://cutelittlegoat.github.io/rpg-dataslate-relay/DataSlate/index.html
+    https://YOUR_USERNAME.github.io/YOUR_REPOSITORY_NAME/DataSlate/index.html
+
+If you use your own server, the address may look like this:
+
+    https://YOUR_DOMAIN/DataSlate/index.html
 
 You should see the page named:
 
@@ -544,9 +616,7 @@ Screenshot: [24.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 ## Step 22 — Open the GM panel
 
-On the launcher page, find the section named:
-
-**Production versions**
+On the launcher page, find the section with the GM link.
 
 Click:
 
@@ -582,9 +652,7 @@ Screenshot: [25.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 Go back to the launcher page.
 
-Find the section named:
-
-**Production versions**
+Find the player-facing DataSlate link.
 
 Click:
 
@@ -642,12 +710,13 @@ Screenshot: [27.jpg](https://cutelittlegoat.github.io/rpg-dataslate-relay/Fireba
 
 The setup is complete when all of these are true:
 
-- the Firebase project exists,
-- the web app `DataSlate_Preview` exists,
-- the file `DataSlate/config/firebase-config.js` contains real Firebase values,
+- your own copy of DataSlate Relay is hosted,
+- your Firebase project exists,
+- your Firebase web app exists,
+- the file `DataSlate/config/firebase-config.js` contains your own Firebase values,
 - Cloud Firestore exists,
-- the Rules were published,
-- the launcher opens from GitHub Pages,
+- the Firestore Rules were published,
+- the launcher opens from your own hosting address,
 - the GM panel can send a message,
 - the DataSlate screen displays the message,
 - Firestore shows `dataslate/current`.
@@ -662,7 +731,7 @@ Check this file:
 
     DataSlate/config/firebase-config.js
 
-Make sure it contains real Firebase values.
+Make sure it contains your own Firebase values.
 
 Make sure it starts with:
 
@@ -671,6 +740,8 @@ Make sure it starts with:
 It should not start with:
 
     const firebaseConfig = {
+
+Also check that the file was actually uploaded or committed to your hosted copy of the app.
 
 ---
 
@@ -683,9 +754,11 @@ Check these things:
 
        allow read, write: if true;
 
-3. Make sure you clicked **Send** in the GM panel.
-4. Refresh both browser tabs.
-5. Wait one minute and refresh GitHub Pages again.
+3. Make sure `DataSlate/config/firebase-config.js` contains your own Firebase values.
+4. Make sure you clicked **Send** in the GM panel.
+5. Refresh both browser tabs.
+6. Wait one minute and refresh the hosted page again.
+7. If you use GitHub Pages, make sure GitHub Pages finished publishing the latest commit.
 
 ---
 
@@ -709,14 +782,61 @@ After that, Firestore should create:
 
 ## The browser still shows the old version
 
-GitHub Pages may need a short moment to update.
+Your browser or hosting provider may still be serving an older cached version.
 
-Wait one minute.
-
-Then refresh the page.
+Refresh the page.
 
 On Windows, press:
 
     Ctrl + F5
 
 This forces the browser to reload the page.
+
+If you use GitHub Pages, wait a moment and refresh again.
+
+---
+
+## The launcher opens, but the GM panel or DataSlate screen does not
+
+Check that the folder structure was copied correctly.
+
+The launcher should be here:
+
+    DataSlate/index.html
+
+The related files should still be inside the same `DataSlate` folder.
+
+Do not rename or move the internal folders unless you also update all related paths in the app.
+
+---
+
+## You copied the app to another server and it still connects to the old Firebase project
+
+This means the configuration file was not replaced correctly.
+
+Open:
+
+    DataSlate/config/firebase-config.js
+
+Make sure it contains your own Firebase project values.
+
+Then upload or commit the file again.
+
+After that, refresh the hosted page with:
+
+    Ctrl + F5
+
+---
+
+# Security note for long-term use
+
+The simple Rules from this guide are useful for a quick first setup, but they are public.
+
+For long-term use, private data, or a public website, replace them with safer Firebase Rules.
+
+A secure setup should usually include:
+
+- Firebase Authentication,
+- restricted read/write access,
+- separate permissions for GM and players,
+- no private data stored in publicly writable documents.
