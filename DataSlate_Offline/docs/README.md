@@ -1,3 +1,5 @@
+> **DataSlate Offline note:** This document is retained as legacy online DataSlate reference material. The active offline generator is `DataSlate_Offline/index.html`: choose settings locally, click **Generate**, and screenshot the new tab. It does not use Firebase, Firestore, Send, Ping, receiver screens, or audio.
+
 # 🇬🇧 User instructions (EN)
 
 ### What this module is for

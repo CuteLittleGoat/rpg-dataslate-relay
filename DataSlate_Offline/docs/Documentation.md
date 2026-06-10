@@ -1,3 +1,5 @@
+> **DataSlate Offline note:** This technical document describes the legacy online DataSlate architecture for reference. The active offline generator is `DataSlate_Offline/index.html`; it uses local JSON/embedded fallback and does not initialize Firebase/Firestore, play audio, or communicate with a receiver screen.
+
 # 🇬🇧 Technical documentation (EN)
 
 ## 1. Purpose and production entry points
