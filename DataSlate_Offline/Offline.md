@@ -1028,3 +1028,100 @@ Minimalny zestaw testowy przed Etapem 3/4 powinien zapewnić pokrycie każdej po
 - Pliki ramek istnieją lokalnie, ale nie są jawnie mapowane w `data.json`; jeśli renderer Etapu 3/4 będzie potrzebował tych plików bez inferencji nazw, warto dodać jawne pola w danych albo utrzymać jednoznaczną konwencję nazewniczą.
 - Sekcja `audios` oraz katalog `assets/audios/` pozostają dla zgodności z manifestem, ale UI i renderer offline powinny ignorować audio.
 - Etap 2 został zakończony statycznie; można przejść do Etapu 3 pod warunkiem świadomego rozwiązania lokalnych fontów i przeniesienia mapy layoutów do docelowego `index.html` albo danych.
+
+## Aktualizacja — 2026-06-10 — dodatkowe ustalenia przed Etapem 3: fonty, komunikaty i layouty
+
+### Oryginalny pełny prompt użytkownika
+
+Przeczytaj plik DataSlate_Offline/Offline.md a następnie dopisz do niego nowe wymagania:
+
+Dodatkowe ustalenia przed Etapem 3 — fonty, komunikaty językowe i layouty zależne od tła
+
+### Fonty i fallback offline
+
+Wersja `DataSlate Offline` może nadal korzystać z nazw fontów zapisanych w `assets/data/data.json`, zgodnych z wersją online. Jeżeli aplikacja ma dostęp do internetu i Google Fonts zostaną poprawnie załadowane, wybrany font powinien być używany normalnie.
+
+Jeżeli aplikacja działa bez internetu albo Google Fonts nie zostaną załadowane, generator i wygenerowany ekran DataSlate mają użyć fallbacku do fontu systemowego. Brak Google Fonts nie może blokować działania generatora, renderowania wiadomości ani tworzenia nowej karty.
+
+W panelu generatora, najlepiej w pobliżu menu wyboru fontu, musi pojawić się czytelna informacja, że z powodu braku połączenia z internetem nie można załadować Google Fonts i dlatego używany jest font systemowy.
+
+Ponieważ aplikacja obsługuje wybór języka, komunikat o niedostępności Google Fonts musi być przygotowany w obsługiwanych językach interfejsu. Nie powinien być wpisany wyłącznie na sztywno po polsku ani wyłącznie po angielsku.
+
+Przykładowe komunikaty:
+
+PL:
+Google Fonts są niedostępne. Generator użyje fontu systemowego.
+
+EN:
+Google Fonts are unavailable. The generator will use a system font.
+
+Komunikat powinien pojawiać się tylko wtedy, gdy Google Fonts faktycznie nie są dostępne albo nie udało się ich załadować. W normalnym trybie online nie powinien niepotrzebnie ostrzegać użytkownika.
+
+### Layouty zależne od tła
+
+„Layout zależny od tła” oznacza pozycję i rozmiar obszaru tekstowego na konkretnym tle DataSlate. Każde tło ma inną ramkę, marginesy i miejsce przeznaczone na wiadomość, więc renderer musi wiedzieć, gdzie wstawić tekst, logo, prefixy i suffixy.
+
+W obecnej wersji informacje te znajdują się w kodzie `DataSlate.html` jako mapa `CONTENT_RECTS_BY_BACKGROUND_ID`. Mapa określa dla każdego `backgroundId` wartości `x`, `y`, `w`, `h`, czyli pozycję i rozmiar prostokąta treści względem tła.
+
+Na tym etapie nie rozszerzamy `assets/data/data.json` o layouty zależne od tła. W Etapie 3/4 należy przenieść istniejącą mapę `CONTENT_RECTS_BY_BACKGROUND_ID` z obecnego `DataSlate.html` do docelowego `index.html`, aby zachować zgodność wizualną z wersją online.
+
+Mapa layoutów nie jest decyzją biznesową, tylko technicznym elementem renderera potrzebnym do zachowania poprawnego położenia tekstu na różnych tłach.
+
+### Wpływ na Etap 3
+
+Etap 3 powinien uwzględniać następujące decyzje:
+
+- menu wyboru fontu zostaje,
+- nazwy fontów z `data.json` zostają zgodne z wersją online,
+- Google Fonts mogą być użyte, jeżeli są dostępne,
+- przy braku internetu aplikacja używa fontu systemowego,
+- użytkownik widzi wielojęzyczny komunikat o fallbacku fontów,
+- brak Google Fonts nie jest błędem krytycznym,
+- mapa `CONTENT_RECTS_BY_BACKGROUND_ID` ma zostać przeniesiona do nowego `index.html`,
+- `data.json` na razie nie musi być rozszerzany o dane layoutów.
+
+### Zakres prac
+
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed dopisaniem nowych wymagań.
+- Dopisano nowe wymagania przed Etapem 3 dotyczące obsługi Google Fonts, fallbacku do fontu systemowego, wielojęzycznego komunikatu ostrzegawczego oraz layoutów zależnych od tła.
+- Nie przebudowywano generatora, nie zmieniano UI `index.html`, nie modyfikowano `assets/data/data.json`, nie przenoszono jeszcze mapy `CONTENT_RECTS_BY_BACKGROUND_ID` i nie zmieniano chronionego folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- Menu wyboru fontu pozostaje elementem panelu generatora offline.
+- Nazwy fontów w `assets/data/data.json` pozostają zgodne z wersją online i mogą być używane do próby załadowania Google Fonts, jeżeli aplikacja ma dostęp do internetu.
+- Brak internetu albo nieudane załadowanie Google Fonts nie może blokować działania generatora, renderowania wiadomości ani tworzenia nowej karty.
+- W przypadku niedostępności Google Fonts generator oraz wygenerowany ekran DataSlate mają używać fontu systemowego jako fallbacku.
+- Panel generatora ma pokazywać czytelny komunikat o fallbacku fontów tylko wtedy, gdy Google Fonts faktycznie nie są dostępne albo nie udało się ich załadować.
+- Komunikat o fallbacku fontów musi być przygotowany w obsługiwanych językach interfejsu, co najmniej w wariantach PL i EN, zamiast być wpisany na sztywno w jednym języku.
+- Przykładowy komunikat PL: `Google Fonts są niedostępne. Generator użyje fontu systemowego.`
+- Przykładowy komunikat EN: `Google Fonts are unavailable. The generator will use a system font.`
+- Layout zależny od tła oznacza pozycję i rozmiar obszaru tekstowego oraz powiązane rozmieszczenie tekstu, logo, prefixów i suffixów dla konkretnego tła DataSlate.
+- Na tym etapie `assets/data/data.json` nie jest rozszerzany o layouty zależne od tła.
+- W Etapie 3/4 należy przenieść mapę `CONTENT_RECTS_BY_BACKGROUND_ID` z obecnego `DataSlate_Offline/DataSlate.html` do docelowego `DataSlate_Offline/index.html`, aby zachować zgodność wizualną z wersją online.
+- Mapa layoutów jest technicznym elementem renderera, a nie decyzją biznesową.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano nowe wymagania przed Etapem 3 dotyczące fontów, wielojęzycznego komunikatu fallbacku oraz przeniesienia mapy layoutów zależnych od tła do `index.html`.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: `Offline.md` wskazywał brak lokalnych plików fontów jako najważniejszy bloker przed pełnym offline i wskazywał konieczność decyzji, czy layouty zależne od tła przenieść do `index.html`, czy rozszerzyć `data.json`.
+- Stan po zmianie: dokument doprecyzowuje, że nazwy fontów z `data.json` zostają, Google Fonts mogą być użyte w trybie online, brak Google Fonts uruchamia fallback systemowy i wielojęzyczny komunikat w UI, a mapa `CONTENT_RECTS_BY_BACKGROUND_ID` ma zostać przeniesiona do `index.html` bez rozszerzania `data.json` na tym etapie.
+- Powód zmiany: użytkownik doprecyzował wymagania przed rozpoczęciem Etapu 3, aby usunąć niejednoznaczność dotyczącą fontów i miejsca przechowywania layoutów zależnych od tła.
+- Kod aplikacji, dane JSON, assety i pliki XLSX nie zostały zmienione.
+
+### Testy/sprawdzenia
+
+- Sprawdzono status repozytorium przed zmianą: `git status --short --branch` pokazał czystą gałąź `work`.
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed dopisaniem nowych wymagań.
+- Po zmianie sprawdzono różnicę w Git dla `DataSlate_Offline/Offline.md`.
+- Nie wykonywano testów funkcjonalnych aplikacji ani testów w przeglądarce, ponieważ zadanie dotyczyło wyłącznie aktualizacji dokumentacji wymagań przed Etapem 3.
+
+### Ryzyka i następne kroki
+
+- Etap 3 musi zaimplementować detekcję niedostępności Google Fonts w sposób, który nie generuje fałszywego ostrzeżenia w normalnym trybie online.
+- Etap 3 musi zintegrować komunikat fallbacku fontów z istniejącym albo docelowym mechanizmem wyboru języka interfejsu.
+- Etap 3/4 musi przenieść `CONTENT_RECTS_BY_BACKGROUND_ID` do aktywnej ścieżki `index.html` bez modyfikowania chronionego folderu `DataSlate/` i bez rozszerzania `data.json` o layouty na tym etapie.
+- Po implementacji należy ręcznie sprawdzić działanie fontów w trybie online i offline oraz poprawne położenie tekstu na wszystkich tłach.
