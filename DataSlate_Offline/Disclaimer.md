@@ -3,7 +3,11 @@
 This module uses resources published by **u/Educational_Sun_6341**:
 
 [40k Symbols and Animated GIFs](https://www.reddit.com/r/40krpg/comments/1to9cci/40k_symbols_and_animated_gifs/)
+---
 
+*For private TTRPG use.*
+
+> The icons are blessed, the dataslate is unreliable, the Firebase link is severed, and the heresy is now entirely your responsibility.
 ---
 
 ## The Offline Heresy
@@ -35,9 +39,3 @@ The result is **DataSlate Offline**: a self-contained techno-heretical contrapti
 Use it locally. Use it privately. Use it for TTRPG sessions.
 
 Do not ask what the AI did to make it work.
-
----
-
-*For private TTRPG use.*
-
-> The icons are blessed, the dataslate is unreliable, the Firebase link is severed, and the heresy is now entirely your responsibility.
