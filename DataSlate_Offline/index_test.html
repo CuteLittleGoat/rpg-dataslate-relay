@@ -197,27 +197,25 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       opacity: 0.92;
     }
 
     .preview-content {
       position: absolute;
-      inset: 9% 9% 10%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 12px;
-      padding: 18px;
+      display: grid;
+      grid-template-rows: minmax(0, var(--preview-filler-band, 32px)) minmax(0, 1fr) minmax(0, var(--preview-filler-band, 32px));
+      gap: 10px;
+      padding: 14px;
       text-shadow: 0 2px 5px rgba(0, 0, 0, 0.85);
     }
 
     .preview-logo {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 88px;
-      height: 88px;
+      top: 14px;
+      right: 14px;
+      width: clamp(40px, 18%, 92px);
+      height: clamp(40px, 18%, 92px);
       background: var(--preview-logo-color, #d4af37);
       -webkit-mask-repeat: no-repeat;
       -webkit-mask-position: center;
@@ -231,7 +229,8 @@
     .preview-lines,
     .preview-message { white-space: pre-wrap; overflow-wrap: anywhere; }
 
-    .preview-lines { opacity: 0.95; }
+    .preview-lines { overflow: hidden; opacity: 0.95; text-align: center; line-height: 1.25; }
+    .preview-message { align-self: center; line-height: 1.32; }
 
     .payload-summary {
       max-height: 220px;
@@ -1628,8 +1627,9 @@
       el.previewLogo.style.maskImage = logo ? `url(${logo.file})` : 'none';
       el.previewContent.style.left = `${rect.x * 100}%`;
       el.previewContent.style.top = `${rect.y * 100}%`;
-      el.previewContent.style.right = `${(1 - rect.x - rect.w) * 100}%`;
-      el.previewContent.style.bottom = `${(1 - rect.y - rect.h) * 100}%`;
+      el.previewContent.style.width = `${rect.w * 100}%`;
+      el.previewContent.style.height = `${rect.h * 100}%`;
+      el.previewContent.style.setProperty('--preview-filler-band', `${clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize) * clamp(el.fillerBandLines.value, 1, 6, DEFAULT_FORM_STATE.fillerBandLines) * 1.25}px`);
       el.previewContent.style.fontFamily = `"${selectedFont?.font || 'Share Tech Mono'}"${FONT_FALLBACK}`;
       el.previewPrefix.textContent = el.fillersEnabled.checked ? fillerState.prefixLines.join('\n') : '';
       el.previewSuffix.textContent = el.fillersEnabled.checked ? fillerState.suffixLines.join('\n') : '';
@@ -1726,6 +1726,24 @@
       return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
     }
 
+    function serializeCssString(value) {
+      return JSON.stringify(String(value ?? '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+    }
+
+    function normalizeContentRect(rect) {
+      const source = rect || DEFAULT_CONTENT_RECT;
+      const x = clamp(source.x, 0, 0.95, DEFAULT_CONTENT_RECT.x);
+      const y = clamp(source.y, 0, 0.95, DEFAULT_CONTENT_RECT.y);
+      const maxW = Math.max(0.01, 1 - x);
+      const maxH = Math.max(0.01, 1 - y);
+      return {
+        x,
+        y,
+        w: clamp(source.w, 0.01, maxW, DEFAULT_CONTENT_RECT.w),
+        h: clamp(source.h, 0.01, maxH, DEFAULT_CONTENT_RECT.h)
+      };
+    }
+
     function parseEmbeddedManifest() {
       const embedded = document.getElementById('embeddedDataSlateData');
       if (!embedded) throw new Error('Missing embedded DataSlate data.');
@@ -1755,16 +1773,17 @@
     }
 
     function buildOfflineSlateHTML(payload) {
-      const rect = payload.contentRect || DEFAULT_CONTENT_RECT;
+      const rect = normalizeContentRect(payload.contentRect || DEFAULT_CONTENT_RECT);
       const fontName = payload.fontPreset || 'Share Tech Mono';
       const prefixLines = Array.isArray(payload.prefixLines) ? payload.prefixLines : [];
       const suffixLines = Array.isArray(payload.suffixLines) ? payload.suffixLines : [];
       const message = payload.text || '';
       const title = message.trim().slice(0, 60) || 'DataSlate Offline';
       const baseHref = document.baseURI || '';
-      const logoBlock = payload.showLogo && payload.logoFile ? `<div class="slate-logo" aria-hidden="true"></div>` : '';
-      const prefixBlock = payload.fillersEnabled && prefixLines.length ? `<div class="slate-fillers slate-prefix">${escapeHtml(prefixLines.join('\n'))}</div>` : '';
-      const suffixBlock = payload.fillersEnabled && suffixLines.length ? `<div class="slate-fillers slate-suffix">${escapeHtml(suffixLines.join('\n'))}</div>` : '';
+      const showLogo = !!(payload.showLogo && payload.logoFile);
+      const prefixBlock = payload.fillersEnabled && prefixLines.length ? `<div id="prefix" class="prefix">${escapeHtml(prefixLines.join('\n'))}</div>` : '<div id="prefix" class="prefix"></div>';
+      const suffixBlock = payload.fillersEnabled && suffixLines.length ? `<div id="suffix" class="suffix">${escapeHtml(suffixLines.join('\n'))}</div>` : '<div id="suffix" class="suffix"></div>';
+      const logoBlock = showLogo ? '<div id="logo" class="logo" aria-hidden="true"></div>' : '';
       return `<!doctype html>
 <html lang="${escapeAttribute(currentLanguage)}">
 <head>
@@ -1774,67 +1793,131 @@
   <title>${escapeHtml(title)}</title>
   <style>
     :root {
-      --message-color: ${escapeHtml(payload.messageColor || DEFAULT_FORM_STATE.messageColor)};
-      --prefix-color: ${escapeHtml(payload.prefixColor || DEFAULT_FORM_STATE.prefixSuffixColor)};
-      --suffix-color: ${escapeHtml(payload.suffixColor || DEFAULT_FORM_STATE.prefixSuffixColor)};
-      --logo-color: ${escapeHtml(payload.logoColor || DEFAULT_FORM_STATE.logoColor)};
-      --msg-size: ${Number(payload.msgFontSize) || DEFAULT_FORM_STATE.msgFontSize}px;
-      --prefix-size: ${Number(payload.prefixFontSize) || DEFAULT_FORM_STATE.psFontSize}px;
-      --suffix-size: ${Number(payload.suffixFontSize) || DEFAULT_FORM_STATE.psFontSize}px;
-      --font-family: "${escapeHtml(fontName)}", Calibri, Arial, sans-serif;
-      --content-left: ${(Number(rect.x) || DEFAULT_CONTENT_RECT.x) * 100}%;
-      --content-top: ${(Number(rect.y) || DEFAULT_CONTENT_RECT.y) * 100}%;
-      --content-right: ${(1 - (Number(rect.x) || DEFAULT_CONTENT_RECT.x) - (Number(rect.w) || DEFAULT_CONTENT_RECT.w)) * 100}%;
-      --content-bottom: ${(1 - (Number(rect.y) || DEFAULT_CONTENT_RECT.y) - (Number(rect.h) || DEFAULT_CONTENT_RECT.h)) * 100}%;
-      --filler-band-lines: ${Number(payload.fillerBandLines) || DEFAULT_FORM_STATE.fillerBandLines};
+      --font: ${serializeCssString(fontName)}, Calibri, Arial, sans-serif;
+      --msg: ${escapeHtml(payload.messageColor || DEFAULT_FORM_STATE.messageColor)};
+      --ps: ${escapeHtml(payload.prefixColor || DEFAULT_FORM_STATE.prefixSuffixColor)};
+      --logoColor: ${escapeHtml(payload.logoColor || DEFAULT_FORM_STATE.logoColor)};
+      --overlayW: 960;
+      --overlayH: 540;
+      --overlayMin: 540;
+      --overlayScale: 1;
+      --overlayPadY: 14px;
+      --overlayPadX: 20px;
+      --overlayGap: 14px;
+      --msgBasePx: ${clamp(payload.msgFontSize, 12, 80, DEFAULT_FORM_STATE.msgFontSize)};
+      --psBasePx: ${clamp(payload.prefixFontSize, 10, 60, DEFAULT_FORM_STATE.psFontSize)};
+      --fillerBandLines: ${clamp(payload.fillerBandLines, 1, 6, DEFAULT_FORM_STATE.fillerBandLines)};
+      --logoSize: 84px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; width: 100%; min-height: 100%; background: #050505; }
-    body { min-height: 100vh; overflow: hidden; font-family: var(--font-family); color: var(--message-color); }
-    .slate-screen { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #050505; }
-    .slate-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .slate-content {
-      position: absolute;
-      left: var(--content-left);
-      top: var(--content-top);
-      right: var(--content-right);
-      bottom: var(--content-bottom);
-      display: grid;
-      grid-template-rows: minmax(0, calc(var(--prefix-size) * var(--filler-band-lines) * 1.25)) minmax(0, 1fr) minmax(0, calc(var(--suffix-size) * var(--filler-band-lines) * 1.25));
-      gap: clamp(8px, 1.4vh, 18px);
-      padding: clamp(12px, 2vw, 32px);
-      text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.75);
-    }
-    .slate-fillers { white-space: pre-wrap; overflow: hidden; opacity: 0.92; line-height: 1.2; letter-spacing: 0.03em; }
-    .slate-prefix { align-self: start; color: var(--prefix-color); font-size: var(--prefix-size); }
-    .slate-suffix { align-self: end; color: var(--suffix-color); font-size: var(--suffix-size); }
-    .slate-message { align-self: center; justify-self: stretch; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--message-color); font-size: var(--msg-size); line-height: 1.35; }
-    .slate-logo {
-      position: absolute;
-      top: clamp(18px, 4vh, 54px);
-      right: clamp(18px, 4vw, 62px);
-      width: clamp(82px, 13vw, 180px);
-      height: clamp(82px, 13vw, 180px);
-      background: var(--logo-color);
-      -webkit-mask: url("${escapeAttribute(payload.logoFile || '')}") center / contain no-repeat;
-      mask: url("${escapeAttribute(payload.logoFile || '')}") center / contain no-repeat;
-      opacity: 0.9;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.72));
-    }
+    html, body { margin: 0; width: 100%; min-height: 100%; background: #000; }
+    body { min-height: 100vh; min-height: 100dvh; overflow: hidden; color: #fff; font-family: var(--font); }
+    .screen { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; background: #000; }
+    .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 0; }
+    .overlay { position: absolute; z-index: 2; overflow: hidden; }
+    .overlayScroll { position: relative; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; padding: var(--overlayPadY) var(--overlayPadX); display: flex; flex-direction: column; gap: var(--overlayGap); text-shadow: 0 2px 5px rgba(0,0,0,.8); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .overlayScroll, .topBand, .msg, .suffix { white-space: pre-wrap; word-break: normal; overflow-wrap: normal; hyphens: manual; }
+    .topBand { min-height: calc(var(--fillerBandLines,2) * 1.35em); display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; column-gap: 12px; }
+    .topBand.no-logo { grid-template-columns: minmax(0,1fr); }
+    .prefix, .suffix { color: var(--ps); font-size: clamp(12px, calc(var(--psBasePx) * 1px * var(--overlayScale)), 28px); line-height: 1.3; text-align: center; overflow: hidden; }
+    .msg { flex: 1 0 auto; color: var(--msg); font-size: clamp(16px, calc(var(--msgBasePx) * 1px * var(--overlayScale)), 44px); line-height: 1.32; text-align: left; }
+    .bottomBand { min-height: calc(var(--fillerBandLines,2) * 1.35em); display: flex; align-items: flex-end; justify-content: center; }
+    .logo { justify-self: end; align-self: start; display: block; width: var(--logoSize); height: var(--logoSize); background: var(--logoColor); -webkit-mask: url("${escapeAttribute(payload.logoFile || '')}") center / contain no-repeat; mask: url("${escapeAttribute(payload.logoFile || '')}") center / contain no-repeat; opacity: .9; }
     .slate-meta { position: fixed; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
   </style>
 </head>
 <body>
-  <main class="slate-screen" data-background-id="${escapeAttribute(payload.backgroundId || '')}" data-content-rect="${escapeAttribute(JSON.stringify(rect))}">
-    <img class="slate-background" src="${escapeAttribute(payload.backgroundFile || '')}" alt="">
-    ${logoBlock}
-    <section class="slate-content" aria-label="DataSlate">
-      ${prefixBlock}
-      <div class="slate-message">${escapeHtml(message)}</div>
-      ${suffixBlock}
-    </section>
+  <main class="screen" id="screen" data-background-id="${escapeAttribute(payload.backgroundId || '')}" data-content-rect="${escapeAttribute(JSON.stringify(rect))}">
+    <img id="bg" class="bg" src="${escapeAttribute(payload.backgroundFile || '')}" alt="">
+    <div id="overlay" class="overlay">
+      <div id="overlayScroll" class="overlayScroll">
+        <div id="topBand" class="topBand${showLogo ? '' : ' no-logo'}">
+          ${prefixBlock}
+          ${logoBlock}
+        </div>
+        <div id="msg" class="msg">${escapeHtml(message)}</div>
+        <div class="bottomBand">${suffixBlock}</div>
+      </div>
+    </div>
     <script type="application/json" class="slate-meta">${serializeForScript(payload)}<\/script>
   </main>
+  <script>
+    const DEFAULT_CONTENT_RECT = ${serializeForScript(DEFAULT_CONTENT_RECT)};
+    const PAYLOAD_CONTENT_RECT = ${serializeForScript(rect)};
+    const el = {
+      bg: document.getElementById('bg'),
+      overlay: document.getElementById('overlay'),
+      topBand: document.getElementById('topBand')
+    };
+    function getViewportSize(){
+      const vv = window.visualViewport;
+      if(vv && Number.isFinite(vv.width) && Number.isFinite(vv.height)){
+        return { w: Math.round(vv.width), h: Math.round(vv.height) };
+      }
+      return {
+        w: Math.round(window.innerWidth || document.documentElement.clientWidth || 0),
+        h: Math.round(window.innerHeight || document.documentElement.clientHeight || 0)
+      };
+    }
+    function updateOverlayMetrics(width,height){
+      const overlayMin = Math.max(1, Math.min(width, height));
+      const overlayScale = Math.max(0.75, Math.min(1.45, overlayMin / 560));
+      const padY = Math.round(Math.max(10, Math.min(26, overlayMin * 0.026)));
+      const padX = Math.round(Math.max(14, Math.min(34, width * 0.04)));
+      const gap = Math.round(Math.max(8, Math.min(24, overlayMin * 0.024)));
+      document.documentElement.style.setProperty('--overlayW', String(width));
+      document.documentElement.style.setProperty('--overlayH', String(height));
+      document.documentElement.style.setProperty('--overlayMin', String(overlayMin));
+      document.documentElement.style.setProperty('--overlayScale', overlayScale.toFixed(3));
+      document.documentElement.style.setProperty('--overlayPadY', padY + 'px');
+      document.documentElement.style.setProperty('--overlayPadX', padX + 'px');
+      document.documentElement.style.setProperty('--overlayGap', gap + 'px');
+    }
+    function fitOverlayToBackground(){
+      const viewport = getViewportSize();
+      const vw = viewport.w;
+      const vh = viewport.h;
+      const nw = el.bg.naturalWidth || vw;
+      const nh = el.bg.naturalHeight || vh;
+      if(!vw || !vh || !nw || !nh){
+        el.overlay.style.left = '0px';
+        el.overlay.style.top = '0px';
+        el.overlay.style.width = '100vw';
+        el.overlay.style.height = '100dvh';
+        updateOverlayMetrics(vw || 1, vh || 1);
+        return;
+      }
+      const scale = Math.min(vw / nw, vh / nh);
+      const rw = Math.max(1, Math.round(nw * scale));
+      const rh = Math.max(1, Math.round(nh * scale));
+      const frameLeft = Math.round((vw - rw) / 2);
+      const frameTop = Math.round((vh - rh) / 2);
+      const rect = PAYLOAD_CONTENT_RECT || DEFAULT_CONTENT_RECT;
+      const left = frameLeft + Math.round(rw * rect.x);
+      const top = frameTop + Math.round(rh * rect.y);
+      const width = Math.max(1, Math.round(rw * rect.w));
+      const height = Math.max(1, Math.round(rh * rect.h));
+      el.overlay.style.left = left + 'px';
+      el.overlay.style.top = top + 'px';
+      el.overlay.style.width = width + 'px';
+      el.overlay.style.height = height + 'px';
+      document.documentElement.style.setProperty('--logoSize', Math.max(38, Math.round(width * 0.14)) + 'px');
+      updateOverlayMetrics(width, height);
+    }
+    let resizeRaf = 0;
+    function scheduleFitOverlay(){
+      if(resizeRaf){ cancelAnimationFrame(resizeRaf); }
+      resizeRaf = requestAnimationFrame(()=>{ fitOverlayToBackground(); resizeRaf = 0; });
+    }
+    el.bg.addEventListener('load', fitOverlayToBackground);
+    window.addEventListener('resize', scheduleFitOverlay, { passive: true });
+    window.addEventListener('orientationchange', scheduleFitOverlay, { passive: true });
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', scheduleFitOverlay, { passive: true });
+      window.visualViewport.addEventListener('scroll', scheduleFitOverlay, { passive: true });
+    }
+    fitOverlayToBackground();
+  <\/script>
 </body>
 </html>`;
     }
