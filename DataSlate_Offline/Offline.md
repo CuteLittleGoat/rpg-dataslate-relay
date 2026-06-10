@@ -1843,3 +1843,94 @@ Utwórz PR z tą zmianą.
 
 - Zmiana nie rozszerza ani nie modyfikuje zakresu Etapu 4.
 - Można wrócić do przygotowania Etapu 4 po tej zmianie.
+
+## Aktualizacja — 2026-06-10 — Etap 5: adaptacja renderera DataSlate
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z zapisanym tam planem, decyzjami oraz stylem dokumentowania zmian.
+
+Zrealizuj:
+
+Etap 5 — adaptacja renderera DataSlate
+
+Celem Etapu 5 jest dopracowanie renderera generowanego przez DataSlate_Offline/index.html tak, aby karta otwierana po kliknięciu Generuj możliwie wiernie odtwarzała wygląd właściwego DataSlate, ale nadal działała całkowicie lokalnie, bez Firebase, bez audio i bez komunikacji z inną kartą.
+
+Ważne: użytkownik nie ma teraz możliwości ręcznego testowania w przeglądarce. Jeżeli pełny test file:// albo test wizualny w prawdziwej przeglądarce nie jest możliwy w środowisku Codex, wykonaj maksymalny możliwy zestaw testów statycznych/headless i opisz w Offline.md, które testy pozostają do późniejszego ręcznego sprawdzenia.
+
+Najważniejsze decyzje obowiązujące przed Etapem 5: głównym plikiem modułu offline jest `DataSlate_Offline/index.html`; `index.html` jest aktywnym panelem generatora offline; domyślnym językiem aplikacji jest angielski; menu języka ma kolejność English, Polski; polski pozostaje dostępny ręcznie; `index_backup.html` i `index_test.html` muszą być zsynchronizowane z `index.html`; aplikacja ma działać online i przez `file://`; dane mają być ładowane hybrydowo przez `fetch('assets/data/data.json', { cache: 'no-store' })` z embedded fallbackiem; embedded data są generowanym fallbackiem; po zmianach należy zachować zgodność z `DataSlate_Offline/tools/update_embedded_data.py`; payload jest lokalny; nie używamy localStorage, sessionStorage, postMessage, query/hash, Firebase, Firestore, `onSnapshot`, `currentRef.set`, `dataslate/current`, `config/firebase-config.js`, SheetJS, runtime’owego parsowania XLSX, audio, Ping ani Wyślij; brak Google Fonts nie może blokować działania; folder `DataSlate/` jest chroniony; pliki `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html` i `DataSlate_test.html` pozostają tymczasowym materiałem referencyjnym i nie wolno usuwać ich w Etapie 5.
+
+Zakres Etapu 5 obejmował: przeczytanie i analizę `Offline.md`, `index.html`, `index_backup.html`, `index_test.html`, `DataSlate.html`, `GM.html`, `assets/data/data.json` i `tools/update_embedded_data.py`; porównanie renderera z `index.html` z referencyjną logiką `DataSlate.html` pod kątem tła, logo, maskowania, fontu, kolorów, pozycji i rozmiaru obszaru treści, `CONTENT_RECTS_BY_BACKGROUND_ID`, prefixów, suffixów, dopasowania do okna i elementów wizualnych; dopracowanie `buildOfflineSlateHTML(payload)` tak, by generowana karta była gotowa do screenshotu, wyświetlała pełnoekranowe tło, używała lokalnych assetów i `contentRect`, obsługiwała logo, kolory, prefixy/suffixy, fonty i fallback systemowy, działała bez internetu/Firebase/audio i nie komunikowała się z panelem po otwarciu; zachowanie albo poprawę podglądu roboczego; nieprzywracanie Flicker, prostokąta cienia, audio, Ping ani Wyślij; niedodawanie Google Fonts jako wymaganej zależności; sprawdzenie ścieżek assetów i mechanizmu `<base href>`; utrzymanie zgodności językowej EN/PL; niemodyfikowanie danych ani manifestu, jeśli nie jest to konieczne; synchronizację `index.html`, `index_backup.html` i `index_test.html`; aktualizację `Offline.md`; wykonanie wskazanych testów statycznych, walidacji HTML, `node --check`, walidacji JSON, kontroli embedded data, synchronizacji, zakazanych mechanizmów, braku zmian w `DataSlate/`, istnienia `openOfflineSlate(payload)` i `buildOfflineSlateHTML(payload)`, kontroli że Generuj używa `openOfflineSlate(payload)`, oraz możliwej statycznej/headless inspekcji wygenerowanego HTML-a. Prompt zawierał również listę czynności niedozwolonych w Etapie 5: nie usuwać referencyjnych plików GM/DataSlate, nie modyfikować `DataSlate/`, nie usuwać manifestu ani `data.json`, nie dodawać Firebase/Firestore/audio/Ping/Wyślij/localStorage/sessionStorage/postMessage/query/hash/ręcznego wyboru data.json/testów wizualnych jako wymogu odbioru i nie zmieniać domyślnego języka z angielskiego na polski. Na końcu użytkownik poprosił o krótkie podsumowanie statusu Etapu 5, synchronizacji, języka, działania online/offline, testów, braków testowych, możliwości przejścia do Etapu 6, blokerów/ryzyk oraz o utworzenie PR z tymi zmianami. Ta sama treść promptu została następnie powtórzona w wiadomości użytkownika drugi raz w identycznej kolejności od „Repozytorium: CuteLittleGoat/rpg-dataslate-relay” do „Utwórz PR z tymi zmianami.”.
+
+### Zakres prac
+
+- Przeczytano aktualny `Offline.md` przed analizą i zmianami.
+- Przeanalizowano aktywny `DataSlate_Offline/index.html`, zsynchronizowane kopie `index_backup.html` i `index_test.html`, referencyjny renderer `DataSlate.html`, referencyjny payload w `GM.html`, `assets/data/data.json` oraz `tools/update_embedded_data.py`.
+- Porównano dotychczasowy renderer Etapu 4 z rendererem referencyjnym DataSlate.
+- Zmieniono finalny renderer generowany przez `buildOfflineSlateHTML(payload)` na układ bliższy `DataSlate.html`: pełnoekranowy `.screen`, tło `.bg` z `object-fit: contain`, overlay pozycjonowany skryptem względem rzeczywiście wyświetlonego obrazu, `overlayScroll`, `topBand`, `prefix`, `msg`, `bottomBand`, `suffix` oraz logo w top bandzie.
+- Zachowano działanie bez Firebase, bez audio, bez Ping/Wyślij, bez `localStorage`, `sessionStorage`, `postMessage`, query/hash oraz bez runtime’owego XLSX.
+- Poprawiono podgląd roboczy w panelu, aby używał `object-fit: contain`, gridu prefix/wiadomość/suffix i wymiarów wynikających z `contentRect`; podgląd nadal pozostaje pomocniczy i nie zastępuje ręcznego testu wizualnego finalnej karty.
+- Uruchomiono `DataSlate_Offline/tools/update_embedded_data.py`, aby zsynchronizować `index_backup.html` i `index_test.html` z `index.html` oraz utrzymać embedded fallback.
+
+### Ustalenia i decyzje
+
+- Etap 5 nie przywraca efektu Flicker ani prostokąta cienia. Statyczna karta offline pozostaje spokojnym widokiem screenshotowym.
+- Logo jest nadal kolorowane lokalnie przez CSS maskę i kolor `background`, bez zewnętrznych filtrów ani pobierania zasobów.
+- Finalna karta używa `contentRect` z payloadu, ale dodatkowo normalizuje jego wartości przed wygenerowaniem dokumentu, aby uniknąć niepoprawnych wymiarów.
+- Finalna karta zachowuje `<base href="document.baseURI">`, więc względne ścieżki assetów nadal powinny działać na serwerze statycznym i przy otwarciu `index.html` z dysku.
+- Font z payloadu jest ustawiany nazwą rodziny CSS, ale zawsze z fallbackiem `Calibri, Arial, sans-serif`; brak Google Fonts nie blokuje generowania.
+- Nie zmieniono `assets/data/data.json`, manifestu XLSX ani folderu `DataSlate/`.
+
+### Analiza referencyjnego `DataSlate.html`
+
+- Referencyjny renderer używa pełnoekranowego kontenera `.screen`, tła `.bg` z `object-fit: contain`, absolutnego overlayu oraz funkcji dopasowującej overlay do rzeczywistych wymiarów wyświetlonego tła.
+- `CONTENT_RECTS_BY_BACKGROUND_ID` definiuje proporcjonalne ramki treści zależne od tła; renderer oblicza pikselową pozycję overlayu po uwzględnieniu letterboxingu wynikającego z `object-fit: contain`.
+- Treść referencyjna jest układana w `overlayScroll`, z `topBand` dla prefixów i logo, środkowym `.msg` oraz `bottomBand` dla suffixów.
+- Logo referencyjne jest maską CSS kolorowaną przez `background`, a jego rozmiar zależy od szerokości overlayu.
+- Elementy Firebase, `onSnapshot`, ping, clear i audio są częścią wersji online i zostały potraktowane wyłącznie jako materiał referencyjny, bez przenoszenia do wersji offline.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — dopracowano finalny renderer generowany przez `buildOfflineSlateHTML(payload)` oraz roboczy podgląd panelu.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowano z `index.html` przy użyciu `tools/update_embedded_data.py`.
+- `DataSlate_Offline/index_test.html` — zsynchronizowano z `index.html` przy użyciu `tools/update_embedded_data.py`.
+- `DataSlate_Offline/Offline.md` — dopisano dokumentację Etapu 5, ustalenia, testy, ryzyka i następne kroki.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: finalna karta Etapu 4 używała uproszczonego układu procentowego względem viewportu i tła z `object-fit: cover`, przez co pozycja `contentRect` mogła odbiegać od wersji online, zwłaszcza przy innych proporcjach okna.
+- Stan po zmianie: finalna karta używa `object-fit: contain`, oblicza rzeczywisty prostokąt wyświetlonego tła, uwzględnia letterboxing i dopiero na tej podstawie pozycjonuje overlay według `contentRect`.
+- Powód zmiany: referencyjny DataSlate pozycjonuje treść względem widocznego obrazu tła, a nie względem całego viewportu.
+- Stan przed zmianą: prefixy, wiadomość i suffixy były renderowane w uproszczonym gridzie `.slate-content`.
+- Stan po zmianie: HTML finalnej karty odtwarza strukturę bliższą `DataSlate.html`: `overlayScroll`, `topBand`, `prefix`, `msg`, `bottomBand`, `suffix`.
+- Powód zmiany: taki układ lepiej odpowiada zachowaniu wersji online i ułatwia utrzymanie wspólnego modelu payloadu.
+- Stan przed zmianą: logo było osobnym absolutnym elementem poza strukturą treści.
+- Stan po zmianie: logo jest umieszczane w `topBand`, maskowane i kolorowane przez CSS tak jak w referencyjnym rendererze, z rozmiarem wyliczanym od szerokości overlayu.
+- Powód zmiany: układ względem prefixów jest bliższy `DataSlate.html`.
+- Stan przed zmianą: podgląd roboczy używał `object-fit: cover` i prostszego układu flex.
+- Stan po zmianie: podgląd roboczy używa `object-fit: contain`, gridu prefix/wiadomość/suffix oraz szerokości/wysokości wyliczanych z `contentRect`.
+- Powód zmiany: podgląd jest teraz spójniejszy z kierunkiem finalnego renderera, choć nadal pozostaje tylko pomocą roboczą.
+
+### Testy
+
+- `git status --short` przed zmianami — repozytorium było czyste.
+- `python3 DataSlate_Offline/tools/update_embedded_data.py` — odświeżono embedded fallback i zsynchronizowano `index_backup.html` oraz `index_test.html`.
+- `npx --yes html-validate DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html` — próba użycia zewnętrznego walidatora nie powiodła się z powodu błędu npm registry `403 Forbidden`; nie traktowano tego jako blokera środowiskowego.
+- `python3` z `html.parser` — podstawowa statyczna walidacja zagnieżdżenia HTML dla `index.html`, `index_backup.html` i `index_test.html` zakończona powodzeniem.
+- `node --check /tmp/dataslate_offline_index.js` — składnia wyodrębnionego skryptu JS z `index.html` poprawna.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json` — JSON poprawny składniowo.
+- Skrypt porównujący embedded data — `embeddedDataSlateData` w `index.html`, `index_backup.html` i `index_test.html` jest zgodny z `assets/data/data.json`.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` oraz `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — kopie backup/test są zsynchronizowane z `index.html`.
+- `rg` dla zakazanych mechanizmów — `index.html` nie zawiera Firebase, Firestore, `onSnapshot`, `currentRef.set`, `dataslate/current`, `config/firebase-config.js`, `localStorage`, `sessionStorage`, `postMessage`, `location.hash`, `location.search`, `URLSearchParams`, SheetJS, XLSX, Ping ani Wyślij.
+- `rg` dla funkcji i handlera — `openOfflineSlate(payload)` i `buildOfflineSlateHTML(payload)` istnieją, a przycisk `Generate` nadal wywołuje `handleGenerate`, który używa `openOfflineSlate(lastPayload)`.
+- Statyczna inspekcja wygenerowanego HTML-a — potwierdzono obecność tła, logo/maski, treści, prefixów/suffixów, `contentRect`, `object-fit: contain`, `fitOverlayToBackground()` i fallbacku fontu systemowego.
+- `git status --short` i `git diff --name-only` po zmianach — zmiany ograniczają się do `DataSlate_Offline/index.html`, `DataSlate_Offline/index_backup.html`, `DataSlate_Offline/index_test.html` oraz `DataSlate_Offline/Offline.md`; folder `DataSlate/` nie został zmodyfikowany.
+
+### Ryzyka i następne kroki
+
+- Nie wykonano ręcznego testu `file://` na Windows ani pełnego testu wizualnego w prawdziwej przeglądarce, ponieważ środowisko Codex nie zapewniało w tym zadaniu interaktywnego ręcznego sprawdzenia wizualnego. Te testy pozostają do późniejszego wykonania przez użytkownika.
+- Statyczna inspekcja wskazuje, że ścieżki assetów i `<base href>` zostały zachowane, ale docelowy scenariusz `C:\...\DataSlate_Offline\index.html` powinien zostać potwierdzony ręcznie.
+- Wierność wizualna jest bliższa wersji online w zakresie tła, overlayu, `contentRect`, logo, prefixów/suffixów i skalowania, ale ostateczne różnice typograficzne zależą od dostępności lokalnych fontów w systemie.
+- Po ręcznym potwierdzeniu działania finalnej karty można przejść do Etapu 6. Brak znanych blokerów kodowych po Etapie 5; główne ryzyko to niezweryfikowany ręcznie wygląd w docelowej przeglądarce i trybie `file://`.
