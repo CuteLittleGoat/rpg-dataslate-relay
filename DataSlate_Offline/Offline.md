@@ -1372,3 +1372,224 @@ W testach/sprawdzeniach wykonaj przynajmniej:
 - Należy wykonać ręczny test w przeglądarce po uruchomieniu przez lokalny serwer statyczny, ponieważ `fetch('assets/data/data.json')` może być blokowany przy bezpośrednim otwarciu pliku z dysku w części przeglądarek.
 - W kolejnych etapach trzeba zdecydować, czy robocze podsumowanie payloadu widoczne w panelu pozostaje jako narzędzie deweloperskie, czy zostanie ukryte przed użytkownikiem końcowym.
 - Po stabilizacji aktywnej ścieżki trzeba zdecydować, kiedy usunąć lub zarchiwizować tymczasowe pliki GM/DataSlate.
+
+## Aktualizacja — 2026-06-10 — ustalenie: hybrydowe dane dla online i offline z dysku
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i dopisz do niego nowe ustalenia dotyczące działania DataSlate Offline zarówno online na serwerze, jak i offline po pobraniu repozytorium na dysk C:\ i otwarciu DataSlate_Offline/index.html bez lokalnego serwera.
+
+To zadanie jest dokumentacyjne. Nie implementuj jeszcze zmian w kodzie aplikacji, chyba że wyraźnie uznasz, że dokumentacja wymaga minimalnego doprecyzowania nazw istniejących mechanizmów. Nie przebudowuj Etapu 4. Nie modyfikuj folderu DataSlate/.
+
+Nowe ustalenia do zapisania w Offline.md:
+
+### Działanie online i offline z dysku
+
+DataSlate Offline ma działać w dwóch trybach:
+
+1. Online / serwer statyczny:
+   - aplikacja może ładować dane przez fetch('assets/data/data.json'),
+   - jest to podstawowa i najczystsza ścieżka dla hostingu online, np. GitHub Pages albo innego serwera statycznego.
+
+2. Offline z dysku C:\:
+   - aplikacja ma działać także po bezpośrednim otwarciu DataSlate_Offline/index.html z pobranego repozytorium,
+   - w tym trybie część przeglądarek może blokować fetch('assets/data/data.json') dla ścieżki file://,
+   - dlatego samo fetch('assets/data/data.json') nie może być jedynym mechanizmem dostępu do danych.
+
+### Wybrane rozwiązanie
+
+Należy zastosować hybrydowy mechanizm danych:
+
+1. index.html najpierw próbuje załadować assets/data/data.json przez fetch, gdy środowisko na to pozwala.
+2. Jeżeli fetch się powiedzie, aplikacja korzysta z danych z data.json.
+3. Jeżeli fetch się nie powiedzie, np. przy otwarciu pliku przez file:// z dysku C:\, aplikacja korzysta z wbudowanej kopii danych zapisanej bezpośrednio w index.html.
+4. Wbudowana kopia danych jest fallbackiem dla trybu offline z dysku, a nie osobnym źródłem prawdy.
+5. Ten sam mechanizm musi zostać uwzględniony w index_backup.html i index_test.html.
+
+Preferowany wariant techniczny do opisania w dokumentacji:
+
+- w index.html można umieścić blok:
+  <script type="application/json" id="embeddedDataSlateData">
+  ...
+  </script>
+
+albo równoważny bezpieczny mechanizm embedded data.
+
+Najważniejsze jest, aby:
+- dane embedded były generowane automatycznie,
+- użytkownik nie musiał ich ręcznie edytować,
+- aplikacja działała zarówno online, jak i po otwarciu z dysku,
+- data.json nadal istniał i był używany tam, gdzie fetch działa poprawnie.
+
+### Zasada utrzymaniowa
+
+Źródłem prawdy dla danych pozostaje DataSlate_Offline/assets/data/DataSlate_manifest.xlsx.
+
+Proces aktualizacji danych Offline nie powinien polegać na ręcznym kopiowaniu danych do HTML. Po każdej zmianie DataSlate_manifest.xlsx należy uruchomić jeden mechanizm aktualizacji danych offline, który automatycznie:
+
+1. generuje lub aktualizuje DataSlate_Offline/assets/data/data.json,
+2. aktualizuje wbudowaną kopię danych w DataSlate_Offline/index.html,
+3. synchronizuje DataSlate_Offline/index_backup.html z index.html,
+4. synchronizuje DataSlate_Offline/index_test.html z index.html.
+
+Z punktu widzenia użytkownika proces powinien pozostać możliwie prosty:
+
+DataSlate_manifest.xlsx → jeden mechanizm aktualizacji danych offline → data.json + embedded data w index.html/index_backup.html/index_test.html
+
+Użytkownik nie powinien ręcznie edytować embedded data w HTML. Embedded data są artefaktem generowanym automatycznie z tego samego źródła co data.json.
+
+### Wpływ na kolejne etapy
+
+Dopisz, że przed lub w ramach Etapu 4 trzeba przygotować albo zaktualizować skrypt/narzędzie generujące dane, tak aby wykonywało oba kroki naraz:
+- generowanie data.json,
+- odświeżenie embedded data w plikach index*.html.
+
+Etap 4, przy implementacji openOfflineSlate(payload) i buildOfflineSlateHTML(payload), powinien uwzględnić ten hybrydowy mechanizm ładowania danych.
+
+### Ograniczenia
+
+Nie używać jako podstawowego mechanizmu:
+- localStorage,
+- sessionStorage,
+- postMessage,
+- query/hash,
+- ręcznego wyboru pliku data.json przez użytkownika,
+- runtime’owego parsowania DataSlate_manifest.xlsx w przeglądarce.
+
+Nie usuwać DataSlate_manifest.xlsx.
+Nie usuwać assets/data/data.json.
+Nie modyfikować folderu DataSlate/.
+Nie wchodzić jeszcze w pełną implementację Etapu 4, jeśli to zadanie jest tylko aktualizacją dokumentacji.
+
+### Sekcja do dopisania
+
+Dopisz do DataSlate_Offline/Offline.md nową sekcję, np.:
+
+## Aktualizacja — 2026-06-10 — ustalenie: hybrydowe dane dla online i offline z dysku
+
+Sekcja powinna zawierać:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- opis problemu fetch przy file://,
+- wybrane rozwiązanie: fetch data.json + embedded fallback,
+- zasadę utrzymaniową dla aktualizacji manifestu/data.json,
+- wpływ na index.html, index_backup.html i index_test.html,
+- wpływ na Etap 4,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+W testach/sprawdzeniach dla tej zmiany dokumentacyjnej wystarczy:
+- sprawdzić status repozytorium przed i po zmianie,
+- przeczytać aktualny Offline.md,
+- potwierdzić, że zmiana dotyczy tylko DataSlate_Offline/Offline.md,
+- nie wykonywać testów funkcjonalnych aplikacji, jeśli kod nie został zmieniony.
+
+Na końcu przygotuj krótkie podsumowanie:
+- czy dokumentacja została uzupełniona,
+- czy decyzja usuwa ryzyko związane z file://,
+- co trzeba zaimplementować w kolejnym etapie,
+- czy można przejść do przygotowania Etapu 4.
+
+Utwórz PR z tą zmianą.
+
+### Zakres prac
+
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed dopisaniem nowych ustaleń.
+- Sprawdzono status repozytorium przed zmianą dokumentacji.
+- Dopisano dokumentacyjne ustalenia dotyczące dwóch trybów uruchamiania DataSlate Offline: online przez serwer statyczny oraz offline z dysku `C:\` przez bezpośrednie otwarcie `DataSlate_Offline/index.html`.
+- Nie implementowano zmian w kodzie aplikacji, nie przebudowywano Etapu 4 i nie zmieniano folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- DataSlate Offline ma działać w dwóch trybach:
+  - online / serwer statyczny, gdzie podstawową i najczystszą ścieżką jest ładowanie danych przez `fetch('assets/data/data.json')`, np. na GitHub Pages albo innym hostingu statycznym;
+  - offline z dysku `C:\`, gdzie użytkownik może pobrać repozytorium i otworzyć bezpośrednio `DataSlate_Offline/index.html` bez lokalnego serwera.
+- Samo `fetch('assets/data/data.json')` nie może być jedynym mechanizmem dostępu do danych, ponieważ w trybie `file://` część przeglądarek może blokować odczyt lokalnego JSON-a przez `fetch`.
+- Docelowym rozwiązaniem jest hybrydowy mechanizm danych: najpierw próba odczytu `assets/data/data.json` przez `fetch`, a w razie niepowodzenia użycie wbudowanej kopii danych zapisanej bezpośrednio w HTML.
+- Wbudowana kopia danych jest wyłącznie fallbackiem dla trybu offline z dysku, a nie osobnym źródłem prawdy.
+- `assets/data/data.json` nadal ma istnieć i nadal ma być używany wszędzie tam, gdzie `fetch` działa poprawnie.
+- Ten sam mechanizm musi objąć `DataSlate_Offline/index.html`, `DataSlate_Offline/index_backup.html` i `DataSlate_Offline/index_test.html`.
+- Preferowany wariant techniczny to blok w rodzaju `<script type="application/json" id="embeddedDataSlateData">...</script>` albo równoważny bezpieczny mechanizm embedded data.
+- Dane embedded muszą być generowane automatycznie; użytkownik nie powinien ręcznie edytować JSON-a w HTML.
+
+### Opis problemu `fetch` przy `file://`
+
+- W trybie online lub przy lokalnym serwerze statycznym `fetch('assets/data/data.json')` jest poprawnym i preferowanym sposobem ładowania manifestu danych.
+- Przy bezpośrednim otwarciu `DataSlate_Offline/index.html` z dysku, np. ze ścieżki `C:\...`, strona działa w kontekście `file://`.
+- W kontekście `file://` zachowanie `fetch` dla lokalnych plików zależy od przeglądarki i jej zasad bezpieczeństwa; część przeglądarek może blokować odczyt `assets/data/data.json`.
+- Jeżeli aplikacja polegałaby wyłącznie na `fetch`, tryb offline z dysku mógłby nie uruchomić list teł, logotypów, fontów i fillerów mimo obecności lokalnego `data.json` w repozytorium.
+
+### Wybrane rozwiązanie: `fetch data.json` + embedded fallback
+
+Docelowy mechanizm ładowania danych powinien działać następująco:
+
+1. `index.html` najpierw próbuje załadować `assets/data/data.json` przez `fetch`, kiedy środowisko na to pozwala.
+2. Jeżeli `fetch` się powiedzie, aplikacja korzysta z danych z `assets/data/data.json`.
+3. Jeżeli `fetch` się nie powiedzie, np. po otwarciu pliku przez `file://` z dysku `C:\`, aplikacja odczytuje wbudowaną kopię danych z HTML.
+4. Wbudowana kopia danych służy tylko jako fallback uruchomieniowy dla trybu offline z dysku.
+5. Kod aplikacji powinien traktować oba źródła jako tę samą strukturę danych wejściowych, aby dalsza logika formularza, payloadu i renderera nie musiała rozróżniać trybu online od offline z dysku.
+
+### Zasada utrzymaniowa dla aktualizacji manifestu i danych
+
+- Źródłem prawdy dla danych pozostaje `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx`.
+- `DataSlate_Offline/assets/data/data.json` jest generowanym artefaktem używanym przez aplikację w trybie online / serwerowym i powinien pozostać w repozytorium.
+- Embedded data w `index.html`, `index_backup.html` i `index_test.html` są drugim generowanym artefaktem z tego samego źródła, potrzebnym dla trybu `file://`.
+- Proces aktualizacji danych offline nie może polegać na ręcznym kopiowaniu JSON-a do HTML.
+- Po każdej zmianie `DataSlate_manifest.xlsx` należy uruchamiać jeden mechanizm aktualizacji danych offline, który automatycznie:
+  1. generuje lub aktualizuje `DataSlate_Offline/assets/data/data.json`,
+  2. odświeża embedded data w `DataSlate_Offline/index.html`,
+  3. synchronizuje `DataSlate_Offline/index_backup.html` z `DataSlate_Offline/index.html`,
+  4. synchronizuje `DataSlate_Offline/index_test.html` z `DataSlate_Offline/index.html`.
+- Oczekiwany proces utrzymaniowy ma być prosty dla użytkownika: `DataSlate_manifest.xlsx → jeden mechanizm aktualizacji danych offline → data.json + embedded data w index.html/index_backup.html/index_test.html`.
+
+### Wpływ na `index.html`, `index_backup.html` i `index_test.html`
+
+- `index.html` musi zostać w kolejnym etapie dostosowany do hybrydowego ładowania danych: `fetch('assets/data/data.json')` jako ścieżka preferowana oraz embedded fallback jako ścieżka awaryjna dla `file://`.
+- `index_backup.html` i `index_test.html` muszą zawierać ten sam mechanizm i tę samą aktualną kopię embedded data co `index.html`.
+- Synchronizacja plików backup/test po zmianie danych powinna być częścią tego samego narzędzia aktualizującego dane, a nie osobnym ręcznym krokiem.
+- W bieżącym zadaniu nie zmieniono aktywnego kodu tych plików; wpis dokumentuje wymaganie dla kolejnego etapu.
+
+### Wpływ na Etap 4
+
+- Przed Etapem 4 albo w ramach Etapu 4 należy przygotować lub zaktualizować skrypt/narzędzie generujące dane offline tak, aby wykonywało oba kroki naraz: generowanie `assets/data/data.json` oraz odświeżenie embedded data w `index*.html`.
+- Implementacja `openOfflineSlate(payload)` i `buildOfflineSlateHTML(payload)` powinna uwzględniać, że formularz oraz renderer bazują na danych załadowanych hybrydowo.
+- Etap 4 nie powinien wprowadzać jako podstawowego mechanizmu dostępu do danych: `localStorage`, `sessionStorage`, `postMessage`, query/hash, ręcznego wyboru `data.json` przez użytkownika ani runtime’owego parsowania `DataSlate_manifest.xlsx` w przeglądarce.
+- Etap 4 powinien zachować możliwość działania online przez statyczny hosting oraz offline po bezpośrednim otwarciu pliku z dysku.
+
+### Ograniczenia
+
+- Nie usuwać `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx`.
+- Nie usuwać `DataSlate_Offline/assets/data/data.json`.
+- Nie modyfikować folderu `DataSlate/`.
+- Nie traktować embedded data jako osobnego, ręcznie utrzymywanego źródła prawdy.
+- Nie opierać podstawowego działania na `localStorage`, `sessionStorage`, `postMessage`, query/hash, ręcznym wyborze pliku JSON ani runtime’owym parsowaniu XLSX w przeglądarce.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano pełny prompt użytkownika oraz ustalenia dokumentacyjne dotyczące hybrydowego ładowania danych dla trybu online/serwerowego i offline z dysku `C:\`.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: dokument zawierał informację, że `index.html` ładuje dane przez `fetch('assets/data/data.json')` oraz wskazywał ryzyko blokowania `fetch` przy bezpośrednim otwarciu pliku z dysku.
+- Stan po zmianie: dokument wskazuje docelowe rozwiązanie tego ryzyka: `fetch` jako preferowaną ścieżkę dla serwera statycznego oraz embedded data jako automatycznie generowany fallback dla `file://`.
+- Powód zmiany: moduł DataSlate Offline ma działać nie tylko online na hostingu statycznym, ale także po pobraniu repozytorium na dysk `C:\` i otwarciu `DataSlate_Offline/index.html` bez lokalnego serwera.
+- Kod aplikacji, dane JSON, pliki XLSX, assety i folder `DataSlate/` nie zostały zmienione.
+
+### Testy/sprawdzenia
+
+- `git status --short` przed zmianą — sprawdzono stan repozytorium przed edycją dokumentacji.
+- `sed -n '1,260p' DataSlate_Offline/Offline.md`, `sed -n '261,620p' DataSlate_Offline/Offline.md`, `sed -n '621,1040p' DataSlate_Offline/Offline.md`, `sed -n '1041,1520p' DataSlate_Offline/Offline.md` oraz `tail -n 120 DataSlate_Offline/Offline.md` — przeczytano aktualny `Offline.md` przed dopisaniem nowej sekcji.
+- `git status --short` po zmianie — potwierdzono, że jedynym zmodyfikowanym plikiem jest `DataSlate_Offline/Offline.md`.
+- `git diff --name-only` po zmianie — potwierdzono, że zmiana dotyczy tylko `DataSlate_Offline/Offline.md`.
+- Nie wykonywano testów funkcjonalnych aplikacji ani testów w przeglądarce, ponieważ zadanie było wyłącznie dokumentacyjne i nie zmieniało kodu aplikacji.
+
+### Ryzyka i następne kroki
+
+- Decyzja dokumentacyjna usuwa znane ryzyko projektowe związane z poleganiem wyłącznie na `fetch` w trybie `file://`, ale samo ryzyko techniczne zostanie usunięte dopiero po implementacji embedded fallbacku.
+- Kolejny etap powinien przygotować narzędzie aktualizacji danych offline generujące jednocześnie `data.json` i embedded data w `index.html`, `index_backup.html` oraz `index_test.html`.
+- Po wdrożeniu mechanizmu trzeba sprawdzić oba tryby: hosting statyczny / lokalny serwer oraz bezpośrednie otwarcie `DataSlate_Offline/index.html` z dysku.
+- Można przejść do przygotowania Etapu 4, pod warunkiem uwzględnienia hybrydowego ładowania danych jako wymagania wejściowego dla implementacji `openOfflineSlate(payload)` i `buildOfflineSlateHTML(payload)`.
