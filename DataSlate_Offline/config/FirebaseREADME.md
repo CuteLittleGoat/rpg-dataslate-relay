@@ -1,3 +1,5 @@
+> **DataSlate Offline note:** This is a legacy online/Firebase reference retained during migration. The active offline generator is `DataSlate_Offline/index.html` and does not require Firebase, Firestore, ping, audio, or this configuration file.
+
 # 🇵🇱 Instrukcja Firebase dla modułu `DataSlate` (PL)
 
 ## Cel

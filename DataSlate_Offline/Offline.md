@@ -1934,3 +1934,155 @@ Zakres Etapu 5 obejmował: przeczytanie i analizę `Offline.md`, `index.html`, `
 - Statyczna inspekcja wskazuje, że ścieżki assetów i `<base href>` zostały zachowane, ale docelowy scenariusz `C:\...\DataSlate_Offline\index.html` powinien zostać potwierdzony ręcznie.
 - Wierność wizualna jest bliższa wersji online w zakresie tła, overlayu, `contentRect`, logo, prefixów/suffixów i skalowania, ale ostateczne różnice typograficzne zależą od dostępności lokalnych fontów w systemie.
 - Po ręcznym potwierdzeniu działania finalnej karty można przejść do Etapu 6. Brak znanych blokerów kodowych po Etapie 5; główne ryzyko to niezweryfikowany ręcznie wygląd w docelowej przeglądarce i trybie `file://`.
+
+## Aktualizacja — 2026-06-10 — Etap 6: porządki po Firebase i audio
+
+### Oryginalny pełny prompt użytkownika
+
+Wiadomość użytkownika zawierała dwa identyczne bloki polecenia. Poniżej zapisano pełną treść jednego bloku oraz informację, że ten sam blok został powtórzony w tej samej wiadomości drugi raz bez zmian.
+
+```text
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z zapisanym tam planem, decyzjami oraz stylem dokumentowania zmian.
+
+Zrealizuj:
+
+Etap 6 — porządki po Firebase i audio
+
+Celem Etapu 6 jest uporządkowanie pozostałości po Firebase, Firestore, audio, Ping/Wyślij oraz dokumentacji online w module DataSlate_Offline, bez naruszania aktywnego działania offline zbudowanego w Etapach 3–5.
+
+Najważniejsze decyzje obowiązujące przed Etapem 6:
+
+- Głównym aktywnym plikiem modułu offline jest DataSlate_Offline/index.html.
+- DataSlate_Offline/index.html ma działać jako samodzielny generator offline.
+- Po kliknięciu Generate/Generuj aplikacja otwiera nową kartę z gotowym ekranem DataSlate.
+- Językiem domyślnym aplikacji jest angielski.
+- Polski pozostaje dostępny jako ręczny wybór użytkownika.
+- index_backup.html i index_test.html muszą pozostać zsynchronizowane z index.html.
+- Dane są ładowane hybrydowo:
+  - fetch('assets/data/data.json', { cache: 'no-store' }) jako ścieżka preferowana,
+  - embeddedDataSlateData jako fallback dla file://.
+- Embedded data są generowanym fallbackiem, nie osobnym źródłem prawdy.
+- DataSlate_Offline/tools/update_embedded_data.py pozostaje narzędziem synchronizującym embedded data i kopie index.
+- Brak Google Fonts nie może blokować działania.
+- Nie wolno modyfikować folderu DataSlate/.
+- Nie usuwaj jeszcze plików GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html ani DataSlate_test.html, chyba że Offline.md zawiera nowszą jednoznaczną decyzję pozwalającą je usunąć. W Etapie 6 traktuj je jako materiał referencyjny lub historyczny.
+- Nie usuwaj DataSlate_Offline/assets/data/DataSlate_manifest.xlsx.
+- Nie usuwaj DataSlate_Offline/assets/data/data.json.
+
+Zakres Etapu 6:
+
+1. Przeczytaj i przeanalizuj wskazane pliki modułu DataSlate_Offline, w tym Offline.md, index.html, index_backup.html, index_test.html, tools/update_embedded_data.py, pliki GM/DataSlate oraz inne pliki zawierające Firebase, Firestore, audio, Ping, Send/Wyślij albo dokumentację online.
+2. Przeprowadź audyt pozostałości po Firebase/Firestore, w tym Firebase, Firestore, firebase-config.js, config/firebase-config.js, initializeApp, getFirestore, collection, doc, dataslate/current, currentRef.set, onSnapshot, send, status połączenia Firebase i CDN Firebase.
+3. Przeprowadź audyt pozostałości po audio/Ping, w tym audio, Audio, dźwięk, sound, Ping, Ping.mp3, audioEnabled, messageAudioId, messageAudioFile, play() i instrukcje odblokowania audio.
+4. Rozdziel wyniki audytu na aktywną ścieżkę offline oraz pliki referencyjne/historyczne.
+5. Upewnij się, że aktywne pliki offline nie importują Firebase, nie używają Firestore/onSnapshot/currentRef.set/dataslate/current, nie używają Ping/audio/Ping.mp3, nie mają Send/Wyślij/Ping, nie pokazują statusu Firebase i nie wymagają zewnętrznych żądań sieciowych.
+6. Jeżeli w aktywnej ścieżce znajdziesz pozostałości, usuń je albo odłącz bez psucia Generate/Generuj, hybrydowego ładowania danych, embedded fallbacku, domyślnego angielskiego, polskiego wyboru ręcznego, buildOfflineSlateHTML(payload), openOfflineSlate(payload) i synchronizacji kopii index.
+7. Plików referencyjnych/historycznych nie usuwaj; opisz ich status w Offline.md i opcjonalnie dodaj niewidoczny komentarz HTML reference-only.
+8. Aktywny index.html nie powinien pokazywać instrukcji konfigurowania Firebase, statusu Firebase ani terminów Send/Wyślij, Ping, receiver/odbiornik i Firebase connection jako elementów działania.
+9. Aktywny generator i finalna karta nie mogą odtwarzać dźwięku; pola audio pozostające w danych/payloadzie mogą zostać opisane jako ignorowane przez renderer offline; assetów audio nie usuwać bez decyzji.
+10. Nie zmieniaj DataSlate_manifest.xlsx ani data.json, chyba że absolutnie konieczne; jeśli zmienisz index.html, uruchom tools/update_embedded_data.py i sprawdź synchronizację kopii.
+11. Nie dodawaj Firebase, Firestore, config/firebase-config.js, audio, Ping, Wyślij/Send, storage, postMessage, query/hash, URLSearchParams, wyboru data.json, runtime XLSX, SheetJS ani CDN wymaganych do działania.
+12. Zaktualizuj Offline.md o pełny prompt, zakres, ustalenia, audyty, rozróżnienie aktywnej i referencyjnej ścieżki, status czystości index, synchronizację kopii, status update_embedded_data.py, komentarze referencyjne, pozostałości historyczne, zmienione pliki, testy i ryzyka.
+13. Wykonaj wskazane testy: git status przed zmianami, wyszukiwania Firebase/Firestore i audio/Ping, potwierdzenie czystości aktywnych indexów, walidację JSON, ewentualną zgodność embedded data, synchronizację kopii index, statyczną walidację HTML, node --check wyodrębnionego JS, sprawdzenie openOfflineSlate/buildOfflineSlateHTML, sprawdzenie Generate -> openOfflineSlate(lastPayload), sprawdzenie domyślnego angielskiego i dostępności polskiego, brak zmian w DataSlate/ oraz git status po zmianach.
+14. Nie wymagaj ręcznego testu wizualnego w Etapie 6; testy ręczne/file:// mogą pozostać do Etapu 7.
+15. Nie przeprojektowuj renderera, nie zmieniaj domyślnego języka, nie usuwaj plików GM/DataSlate, manifestu, data.json ani assetów audio, nie modyfikuj DataSlate/, nie dodawaj nowych funkcji i nie zaczynaj Etapu 7.
+
+Na końcu przygotuj krótkie podsumowanie statusu Etapu 6, czystości aktywnej ścieżki, plików referencyjnych, synchronizacji indexów, języka, embedded fallbacku, testów, braków testowych, możliwości przejścia do Etapu 7, blokerów/ryzyk oraz utwórz PR z tymi zmianami.
+```
+
+Drugi blok w wiadomości użytkownika powtarzał tę samą treść od `Repozytorium: CuteLittleGoat/rpg-dataslate-relay` do `Utwórz PR z tymi zmianami.`.
+
+### Zakres prac
+
+- Przeczytano bieżący `DataSlate_Offline/Offline.md` przed analizą i zmianami.
+- Sprawdzono stan repozytorium przed zmianami.
+- Przeanalizowano aktywną ścieżkę offline: `index.html`, `index_backup.html`, `index_test.html`, `tools/update_embedded_data.py`, `assets/data/data.json` oraz lokalne assety wskazywane przez dane.
+- Przeanalizowano pliki referencyjne/historyczne: `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html`, `DataSlate_test.html`.
+- Przeanalizowano stare dokumenty online w `config/FirebaseREADME.md`, `docs/README.md` i `docs/Documentation.md`.
+- Nie zmieniano `DataSlate/`, `DataSlate_manifest.xlsx`, `assets/data/data.json` ani aktywnych plików `index.html`, `index_backup.html`, `index_test.html`.
+- Dodano niewidoczne komentarze/notatki reference-only do plików referencyjnych i dokumentacji online.
+
+### Ustalenia i decyzje
+
+- Aktywną ścieżką DataSlate Offline pozostają `index.html`, `index_backup.html`, `index_test.html`, `tools/update_embedded_data.py`, `assets/data/data.json` i lokalne assety używane przez generator.
+- `index.html` był już czysty funkcjonalnie po Etapie 5: nie importował Firebase, nie inicjalizował Firestore, nie używał `onSnapshot`, `currentRef.set`, `dataslate/current`, przycisków Send/Wyślij/Ping ani aktywnego audio.
+- Jedynym wystąpieniem słowa audio w aktywnej ścieżce jest sekcja danych `audios` w `data.json` i jej embedded kopiach w indexach. Renderer offline nie używa tej listy, nie tworzy `Audio`, nie wywołuje `play()` i nie wymaga kliknięcia odblokowującego dźwięk.
+- `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html`, `DataSlate_test.html`, `config/FirebaseREADME.md`, `docs/README.md` i `docs/Documentation.md` pozostają materiałem referencyjnym/historycznym migracji i mogą zawierać kod lub instrukcje online.
+- W Etapie 6 nie uruchamiano `tools/update_embedded_data.py`, ponieważ `index.html` ani `data.json` nie zostały zmienione. Synchronizacja kopii została potwierdzona przez `cmp` i porównanie embedded JSON.
+- Można przejść do Etapu 7 po akceptacji tych porządków; Etap 7 powinien obejmować testy ręczne/wizualne w prawdziwej przeglądarce i trybie `file://`.
+
+### Audyt Firebase/Firestore
+
+#### Aktywna ścieżka offline
+
+- `index.html`, `index_backup.html`, `index_test.html`, `tools/update_embedded_data.py` i `assets/data/data.json` nie zawierają aktywnych wystąpień `Firebase`, `Firestore`, `firebase-config.js`, `config/firebase-config.js`, `initializeApp`, `getFirestore`, `dataslate/current`, `currentRef.set`, `onSnapshot`, statusu Firebase ani CDN Firebase.
+- Szersze wyszukiwanie po `DataSlate_Offline` zwraca nadal trafienia w plikach historycznych i dokumentach online, ale nie w aktywnej ścieżce działania generatora.
+
+#### Pliki referencyjne/historyczne
+
+- Pliki GM/DataSlate z kopii online nadal zawierają mechanizmy Firebase/Firestore, w tym import `config/firebase-config.js`, skrypty Firebase Web SDK, `firebase.initializeApp`, `firebase.firestore()`, `collection('dataslate').doc('current')`, `currentRef.set(...)` i/lub `onSnapshot(...)`.
+- `config/FirebaseREADME.md`, `docs/README.md` i `docs/Documentation.md` nadal zachowują treści online/Firebase jako materiał historyczny, ale otrzymały notatkę, że aktywny generator offline ich nie używa.
+
+### Audyt audio/Ping/Wyślij
+
+#### Aktywna ścieżka offline
+
+- `index.html`, `index_backup.html` i `index_test.html` nie zawierają przycisku Send/Wyślij, przycisku Ping, `new Audio`, `play()`, `audioEnabled`, `messageAudioId`, `messageAudioFile`, `Ping.mp3` ani instrukcji odblokowania audio.
+- `assets/data/data.json` oraz embedded fallback w trzech plikach index zawierają listę `audios` z `assets/audios/KeyboardTyping.mp3`. To dane referencyjne zachowane dla zgodności z eksportem; renderer offline ich nie odczytuje i nie odtwarza dźwięku.
+- Trafienia wyszukiwania dla `Ping` w aktywnych indexach wynikające z frazy `Keyboard Typing` są fałszywym pozytywem dopasowania tekstowego, nie mechanizmem Ping.
+
+#### Pliki referencyjne/historyczne
+
+- Pliki GM/DataSlate z kopii online nadal zawierają UI i/lub logikę Send/Wyślij, Ping oraz audio, ponieważ są zachowane jako materiał porównawczy i nie są aktywną ścieżką DataSlate Offline.
+- Asset `assets/audios/KeyboardTyping.mp3` pozostaje w module, ale Etap 6 potwierdził, że aktywny generator go nie używa.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/GM.html` — dodano niewidoczny komentarz HTML oznaczający plik jako referencyjny, historyczny plik online, nieaktywny dla generatora offline.
+- `DataSlate_Offline/DataSlate.html` — dodano niewidoczny komentarz HTML oznaczający plik jako referencyjny, historyczny plik online, nieaktywny dla generatora offline.
+- `DataSlate_Offline/GM_backup.html` — dodano niewidoczny komentarz HTML reference-only.
+- `DataSlate_Offline/DataSlate_backup.html` — dodano niewidoczny komentarz HTML reference-only.
+- `DataSlate_Offline/GM_test.html` — dodano niewidoczny komentarz HTML reference-only.
+- `DataSlate_Offline/DataSlate_test.html` — dodano niewidoczny komentarz HTML reference-only.
+- `DataSlate_Offline/config/FirebaseREADME.md` — dodano notatkę, że dokument jest legacy/reference i nie dotyczy aktywnego generatora offline.
+- `DataSlate_Offline/docs/README.md` — dodano notatkę, że dokument opisuje legacy online DataSlate, a aktywny offline workflow używa `index.html` i `Generate` bez Firebase/Firestore/Send/Ping/audio.
+- `DataSlate_Offline/docs/Documentation.md` — dodano notatkę, że dokument opisuje legacy online DataSlate, a aktywny generator offline używa lokalnego JSON/embedded fallbacku i nie komunikuje się z odbiornikiem.
+- `DataSlate_Offline/Offline.md` — dopisano niniejszą dokumentację Etapu 6.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: pliki referencyjne GM/DataSlate i dokumenty online nie miały jednoznacznego lokalnego oznaczenia, że nie są aktywną ścieżką DataSlate Offline.
+- Stan po zmianie: sześć historycznych plików HTML ma niewidoczny komentarz `Reference-only legacy online file for DataSlate_Offline migration. Not used by active offline generator.` na początku pliku.
+- Powód zmiany: użytkownik dopuścił taki komentarz w Etapie 6, a oznaczenie zmniejsza ryzyko pomylenia historycznych plików online z aktywnym generatorem offline.
+- Stan przed zmianą: dokumenty `config/FirebaseREADME.md`, `docs/README.md` i `docs/Documentation.md` zawierały aktualnie brzmiące instrukcje Firebase/Firestore/Send/Ping/audio bez ostrzeżenia w pierwszej linii.
+- Stan po zmianie: dokumenty zachowują treść historyczną, ale zaczynają się od notatki DataSlate Offline wskazującej, że są materiałem legacy/reference, a aktywny generator nie używa Firebase/Firestore/audio/Ping/Send.
+- Powód zmiany: nie usuwać masowo historii online, ale rozdzielić dokumentację historyczną od aktualnego trybu offline.
+
+### Testy/sprawdzenia
+
+- `git status --short` przed zmianami — repozytorium było czyste.
+- `rg -n -i "Firebase|Firestore|firebase-config\.js|config/firebase-config\.js|initializeApp|getFirestore|collection|doc|dataslate/current|currentRef\.set|onSnapshot|connection/status Firebase|CDN Firebase|send|wyślij" DataSlate_Offline || true` — audyt globalny pokazał pozostałości w plikach referencyjnych/historycznych i dokumentacji online; aktywna ścieżka została sprawdzona osobno.
+- `rg -n -i "audio|Audio|dźwięk|sound|Ping|Ping\.mp3|audioEnabled|messageAudioId|messageAudioFile|\.play\(|play\(\)" DataSlate_Offline || true` — audyt globalny pokazał pozostałości w plikach referencyjnych/historycznych, dokumentacji online oraz referencyjną listę `audios` w danych.
+- `rg -n -i "Firebase|Firestore|firebase-config\.js|config/firebase-config\.js|initializeApp|getFirestore|dataslate/current|currentRef\.set|onSnapshot|CDN Firebase" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html DataSlate_Offline/tools/update_embedded_data.py DataSlate_Offline/assets/data/data.json || true` — brak trafień w aktywnej ścieżce.
+- `rg -n -i "\bPing\b|Ping\.mp3|audioEnabled|messageAudioId|messageAudioFile|new Audio|\.play\(|play\(\)|click.*audio|unlock.*audio|odblok.*audio" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html DataSlate_Offline/tools/update_embedded_data.py DataSlate_Offline/assets/data/data.json || true` — brak aktywnych mechanizmów Ping/audio; jedyne trafienie dotyczy ścieżki `assets/audios/KeyboardTyping.mp3` w danych i embedded fallbacku.
+- `rg -n -i "audio" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html DataSlate_Offline/assets/data/data.json || true` — potwierdzono, że aktywne wystąpienia audio są wyłącznie danymi `audios`, ignorowanymi przez renderer offline.
+- `rg -n -i "send|wyślij|wyslij|receiver|odbiornik|Firebase connection|status Firebase|Ping" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html || true` — brak przycisków/terminów UI Send/Wyślij/receiver/Firebase; trafienia dla `Ping` wynikają z tekstu `Keyboard Typing` w embedded danych.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json >/tmp/dataslate-data-json-ok` — `data.json` jest poprawnym JSON-em.
+- `python3` z `html.parser` dla `index.html`, `index_backup.html` i `index_test.html` — podstawowa statyczna walidacja HTML zakończona powodzeniem.
+- `node --check /tmp/dataslate_offline_index.js` — wyodrębniony skrypt JavaScript z `index.html` ma poprawną składnię.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` — `index_backup.html` jest zsynchronizowany z `index.html`.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — `index_test.html` jest zsynchronizowany z `index.html`.
+- Skrypt porównujący embedded data z `assets/data/data.json` — embedded data w `index.html`, `index_backup.html` i `index_test.html` są zgodne z `data.json`.
+- `rg -n "function openOfflineSlate\(payload\)|function buildOfflineSlateHTML\(payload\)|openOfflineSlate\(lastPayload\)|let currentLanguage = 'en'|<option value=\"pl\">Polski</option>" DataSlate_Offline/index.html` — potwierdzono istnienie `buildOfflineSlateHTML(payload)`, `openOfflineSlate(payload)`, wywołania `openOfflineSlate(lastPayload)`, domyślnego języka `en` i ręcznego wyboru polskiego.
+- `rg -n "DATA_URL|fetch\('assets/data/data\.json'|cache: 'no-store'" DataSlate_Offline/index.html` — potwierdzono zachowanie `DATA_URL = 'assets/data/data.json'` i preferowanego `fetch(..., { cache: 'no-store' })`.
+- `git diff --name-only -- DataSlate` — brak zmian w chronionym folderze `DataSlate/`.
+- `git status --short` po zmianach — zmiany ograniczone do `DataSlate_Offline/`.
+
+### Ryzyka i następne kroki
+
+- Nie wykonano ręcznego testu wizualnego ani testu `file://` w prawdziwej przeglądarce; zgodnie z poleceniem nie jest to blocker Etapu 6 i pozostaje do Etapu 7.
+- Pliki referencyjne/historyczne nadal zawierają aktywny kod online, Firebase, Firestore, Send/Wyślij, Ping i audio. Nie jest to błąd aktywnego generatora, ale wymaga ostrożności przy przyszłych pracach i ewentualnej decyzji, czy usunąć lub zarchiwizować te pliki w późniejszym etapie.
+- Dokumenty legacy zachowują pełne historyczne instrukcje online po dodanej notatce. Jeżeli w przyszłości `docs/README.md` ma stać się aktualną instrukcją użytkownika DataSlate Offline, należy przepisać go jako dokument offline zamiast utrzymywać go jako materiał referencyjny.
+- Brak znanych blokerów kodowych dla przejścia do Etapu 7.
