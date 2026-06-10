@@ -1540,6 +1540,12 @@
       return Math.min(max, Math.max(min, Math.floor(number)));
     }
 
+    function clampFloat(value, min, max, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.min(max, Math.max(min, number));
+    }
+
     function normalizeHexColor(value, fallback) {
       const raw = String(value || '').trim();
       if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
@@ -1732,16 +1738,27 @@
 
     function normalizeContentRect(rect) {
       const source = rect || DEFAULT_CONTENT_RECT;
-      const x = clamp(source.x, 0, 0.95, DEFAULT_CONTENT_RECT.x);
-      const y = clamp(source.y, 0, 0.95, DEFAULT_CONTENT_RECT.y);
+      const x = clampFloat(source.x, 0, 0.95, DEFAULT_CONTENT_RECT.x);
+      const y = clampFloat(source.y, 0, 0.95, DEFAULT_CONTENT_RECT.y);
       const maxW = Math.max(0.01, 1 - x);
       const maxH = Math.max(0.01, 1 - y);
       return {
         x,
         y,
-        w: clamp(source.w, 0.01, maxW, DEFAULT_CONTENT_RECT.w),
-        h: clamp(source.h, 0.01, maxH, DEFAULT_CONTENT_RECT.h)
+        w: clampFloat(source.w, 0.01, maxW, DEFAULT_CONTENT_RECT.w),
+        h: clampFloat(source.h, 0.01, maxH, DEFAULT_CONTENT_RECT.h)
       };
+    }
+
+    function formatSlateTitleTimestamp(createdAt) {
+      const parsedDate = new Date(createdAt);
+      const date = Number.isFinite(parsedDate.getTime()) ? parsedDate : new Date();
+      const pad = (value) => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+    }
+
+    function buildSlateDocumentTitle(payload) {
+      return `DataSlate ${formatSlateTitleTimestamp(payload?.createdAt)}`;
     }
 
     function parseEmbeddedManifest() {
@@ -1778,7 +1795,7 @@
       const prefixLines = Array.isArray(payload.prefixLines) ? payload.prefixLines : [];
       const suffixLines = Array.isArray(payload.suffixLines) ? payload.suffixLines : [];
       const message = payload.text || '';
-      const title = message.trim().slice(0, 60) || 'DataSlate Offline';
+      const title = buildSlateDocumentTitle(payload);
       const baseHref = document.baseURI || '';
       const showLogo = !!(payload.showLogo && payload.logoFile);
       const prefixBlock = payload.fillersEnabled && prefixLines.length ? `<div id="prefix" class="prefix">${escapeHtml(prefixLines.join('\n'))}</div>` : '<div id="prefix" class="prefix"></div>';

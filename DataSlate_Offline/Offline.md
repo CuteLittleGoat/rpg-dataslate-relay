@@ -2212,3 +2212,253 @@ Pozostałe ryzyko jest ograniczeniem środowiskowym, nie blockerem PR: prawdziwa
 - Jeżeli przyszłe środowisko będzie miało Chromium/Playwright, warto dodać opcjonalny test E2E uruchamiający lokalny serwer, klikający Generate i przechwytujący wygenerowaną kartę.
 - Test screenshotowy/regresja wizualna powinny zostać rozważone dopiero po decyzji o dopuszczalnej infrastrukturze headless.
 - Aktualny runner `DataSlate_Offline/tests/etap7_regression.py` powinien być uruchamiany po każdej zmianie aktywnej ścieżki offline, danych albo narzędzia synchronizacji.
+
+## Aktualizacja — 2026-06-10 — poprawka regresji: niewidoczny overlay i tytuł karty
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+W module DataSlate_Offline po Etapie 7 wykryto błąd funkcjonalny w prawdziwym użyciu aplikacji online.
+
+Objawy zgłoszone przez użytkownika:
+- po kliknięciu Generate/Generuj nowa karta otwiera się poprawnie,
+- tło renderuje się poprawnie,
+- ale nie widać wiadomości,
+- nie widać fillerów prefix/suffix,
+- po zaznaczeniu Show logo nie widać logo w wygenerowanej karcie,
+- w podglądzie roboczym w panelu tekst/fillery/logo są widoczne,
+- tytuł nowej karty jest ustawiany na wpisaną treść wiadomości, np. "dasdas", co jest niewygodne,
+- użytkownik chce, aby tytuł karty miał format: "DataSlate" + timestamp.
+
+Przeczytaj aktualne:
+- DataSlate_Offline/Offline.md,
+- DataSlate_Offline/index.html,
+- DataSlate_Offline/index_backup.html,
+- DataSlate_Offline/index_test.html,
+- DataSlate_Offline/tests/etap7_regression.py,
+- DataSlate_Offline/tests/Etap7_report.md.
+
+Zdiagnozowany prawdopodobny błąd:
+
+W DataSlate_Offline/index.html funkcja normalizeContentRect(rect) używa ogólnej funkcji clamp(...). Funkcja clamp(...) wykonuje Math.floor(number). To jest poprawne dla wartości całkowitych typu liczba fillerów lub rozmiar fontu, ale jest błędne dla contentRect, który ma wartości ułamkowe z zakresu 0..1.
+
+Przykład:
+contentRect:
+{ x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 }
+
+Po użyciu clamp() może zostać znormalizowany do czegoś w rodzaju:
+{ x: 0, y: 0, w: 0.01, h: 0.01 }
+
+Efekt:
+overlay z tekstem, fillerami i logo istnieje, ale ma mikroskopijny rozmiar i dlatego w wygenerowanej karcie widać praktycznie samo tło.
+
+Zakres poprawki:
+
+1. Napraw normalizeContentRect(rect)
+
+   Nie używaj integerowego clamp() do wartości contentRect.
+
+   Dodaj osobną funkcję, np.:
+
+   function clampFloat(value, min, max, fallback) {
+     const number = Number(value);
+     if (!Number.isFinite(number)) return fallback;
+     return Math.min(max, Math.max(min, number));
+   }
+
+   Następnie popraw normalizeContentRect(rect), aby używała clampFloat(...) dla x, y, w, h.
+
+   Wymaganie:
+   normalizeContentRect({ x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 })
+   ma zwracać wartości ułamkowe zbliżone do wejściowych, a nie w: 0.01 / h: 0.01.
+
+2. Upewnij się, że finalna karta renderuje widoczne:
+   - message,
+   - prefixy,
+   - suffixy,
+   - logo, gdy showLogo === true,
+   - brak logo, gdy showLogo === false.
+
+3. Zmień tytuł generowanej karty.
+
+   Obecnie buildOfflineSlateHTML(payload) ustawia title na podstawie tekstu wiadomości.
+
+   Zmień to tak, aby tytuł nowej karty nie zależał od treści wiadomości.
+
+   Wymagany format:
+   DataSlate YYYY-MM-DD HH-MM-SS
+
+   albo równoważny bezpieczny timestamp, np.:
+   DataSlate 2026-06-10 09-42-31
+
+   Ważne:
+   - tytuł ma zaczynać się od "DataSlate",
+   - ma zawierać timestamp,
+   - nie ma zawierać treści wiadomości użytkownika,
+   - timestamp ma być bezpieczny dla tytułu karty,
+   - jeżeli używasz createdAt z payloadu, sformatuj go czytelnie,
+   - jeżeli createdAt jest niedostępne lub błędne, użyj new Date().
+
+4. Dodaj test regresyjny dla contentRect.
+
+   Zaktualizuj DataSlate_Offline/tests/etap7_regression.py albo dodaj osobny mały test w tym samym stylu.
+
+   Test powinien potwierdzić, że:
+   - normalizeContentRect nie obcina wartości ułamkowych do zera,
+   - dla przykładowego rect { x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 } wynik zachowuje sensowną szerokość i wysokość, np. w > 0.5 i h > 0.5,
+   - buildOfflineSlateHTML(payload) generuje HTML zawierający wiadomość testową,
+   - buildOfflineSlateHTML(payload) generuje HTML zawierający prefix i suffix, gdy fillersEnabled === true,
+   - buildOfflineSlateHTML(payload) generuje HTML zawierający element logo, gdy showLogo === true,
+   - buildOfflineSlateHTML(payload) nie generuje elementu logo, gdy showLogo === false,
+   - wygenerowany <title> zaczyna się od "DataSlate",
+   - wygenerowany <title> nie zawiera tekstu wiadomości payloadu.
+
+5. Dodaj test wariantu wykrytego przez użytkownika.
+
+   Użyj payloadu podobnego do:
+   - backgroundId: 6 albo 10,
+   - backgroundFile: assets/backgrounds/DataSlate_Inq.png albo assets/backgrounds/WnG.png,
+   - showLogo: true,
+   - logoFile: assets/logos/Aquila.png,
+   - fillersEnabled: true,
+   - message: "Test" albo "dasdas",
+   - contentRect z wartościami ułamkowymi właściwymi dla danego tła.
+
+   Test powinien wykazać, że:
+   - overlay nie ma mikroskopijnych wymiarów,
+   - HTML zawiera treść wiadomości,
+   - HTML zawiera fillery,
+   - HTML zawiera logo,
+   - title nie jest "Test" ani "dasdas".
+
+6. Zsynchronizuj pliki:
+   - DataSlate_Offline/index_backup.html,
+   - DataSlate_Offline/index_test.html
+
+   z poprawionym DataSlate_Offline/index.html.
+
+   Jeśli zmienisz index.html, uruchom DataSlate_Offline/tools/update_embedded_data.py albo wykonaj równoważną synchronizację zgodnie z dotychczasową zasadą projektu.
+
+7. Zaktualizuj dokumentację.
+
+   Dopisz do DataSlate_Offline/Offline.md nową sekcję, np.:
+
+   ## Aktualizacja — 2026-06-10 — poprawka regresji: niewidoczny overlay i tytuł karty
+
+   Sekcja powinna zawierać:
+   - pełny opis zgłoszonego problemu,
+   - przyczynę techniczną,
+   - opis błędu Math.floor/clamp dla contentRect,
+   - opis poprawki clampFloat/normalizeContentRect,
+   - opis zmiany tytułu karty na "DataSlate" + timestamp,
+   - zmienione pliki,
+   - testy wykonane,
+   - informację, czy index_backup.html i index_test.html są zsynchronizowane,
+   - informację, czy aktywna ścieżka nadal jest bez Firebase/audio/Ping/Send/storage/postMessage/query/hash,
+   - ryzyka i następne kroki.
+
+8. Uruchom testy.
+
+   Wykonaj przynajmniej:
+   - python3 DataSlate_Offline/tests/etap7_regression.py,
+   - python3 DataSlate_Offline/tests/etap7_regression.py --markdown, jeżeli raport jest generowany tym mechanizmem,
+   - python3 -m json.tool DataSlate_Offline/assets/data/data.json,
+   - python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py,
+   - node --check dla wyodrębnionego JS z index.html albo dotychczasowy odpowiednik,
+   - sprawdzenie synchronizacji index_backup.html i index_test.html z index.html,
+   - sprawdzenie zgodności embeddedDataSlateData z data.json,
+   - skany zakazanych mechanizmów: Firebase, Firestore, onSnapshot, currentRef.set, dataslate/current, config/firebase-config.js, localStorage, sessionStorage, postMessage, location.hash, location.search, URLSearchParams, SheetJS, XLSX runtime, audio, Ping, Send/Wyślij,
+   - git diff --name-only -- DataSlate, aby potwierdzić brak zmian w chronionym folderze DataSlate/.
+
+9. Nie rób w tej poprawce:
+   - nie przebudowuj całego renderera,
+   - nie zmieniaj domyślnego języka z angielskiego,
+   - nie usuwaj plików legacy GM/DataSlate,
+   - nie usuwaj DataSlate_manifest.xlsx,
+   - nie usuwaj assets/data/data.json,
+   - nie modyfikuj folderu DataSlate/,
+   - nie dodawaj Firebase,
+   - nie dodawaj audio,
+   - nie dodawaj Ping,
+   - nie dodawaj Send/Wyślij,
+   - nie dodawaj storage/postMessage/query/hash jako mechanizmu działania,
+   - nie dodawaj ręcznego wyboru data.json przez użytkownika.
+
+Na końcu przygotuj krótkie podsumowanie:
+- czy błąd niewidocznego tekstu/fillerów/logo został naprawiony,
+- czy przyczyną był clamp/Math.floor na contentRect,
+- czy tytuł karty ma teraz format "DataSlate" + timestamp,
+- jakie testy regresyjne dodano,
+- jakie testy wykonano,
+- czy index.html, index_backup.html i index_test.html są zsynchronizowane,
+- czy można ponownie sprawdzić Generate online.
+
+Utwórz PR z tą poprawką.
+
+### Zakres prac
+
+- Przeczytano aktualny `DataSlate_Offline/Offline.md` oraz wskazane pliki: `index.html`, `index_backup.html`, `index_test.html`, `tests/etap7_regression.py` i `tests/Etap7_report.md`.
+- Sprawdzono stan repozytorium przed zmianami.
+- Naprawiono normalizację `contentRect` w aktywnym generatorze offline bez przebudowy renderera.
+- Zmieniono tytuł generowanego dokumentu tak, aby nie był zależny od treści wiadomości.
+- Rozszerzono regresyjny test Node VM o wariant z ułamkowym `contentRect`, prefixem, suffixem, logo i tytułem `DataSlate` + timestamp.
+- Uruchomiono narzędzie synchronizacji `tools/update_embedded_data.py`, aby `index_backup.html` i `index_test.html` były byte-identical względem `index.html`.
+- Nie modyfikowano chronionego folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- Przyczyną błędu był wspólny helper `clamp(...)`, który wykonuje `Math.floor(number)`. Dla pól liczbowych wymagających wartości całkowitych, takich jak liczba fillerów albo rozmiar fontu, zachowanie pozostaje poprawne.
+- Ten sam integerowy helper był jednak błędny dla `contentRect`, bo `contentRect` przechowuje ułamkowe proporcje obszaru treści w zakresie 0..1.
+- Dla przykładu `{ x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 }` poprzednia normalizacja mogła sprowadzić szerokość i wysokość do wartości mikroskopijnych, przez co overlay z tekstem, fillerami i logo istniał, ale był praktycznie niewidoczny na tle.
+- Dodano osobny helper `clampFloat(...)`, który zachowuje wartości ułamkowe i tylko ogranicza je do dozwolonego zakresu.
+- `normalizeContentRect(...)` używa teraz `clampFloat(...)` dla `x`, `y`, `w` i `h`.
+- Tytuł generowanej karty ma teraz postać `DataSlate YYYY-MM-DD HH-MM-SS`. Jeżeli `payload.createdAt` jest poprawną datą, timestamp powstaje na jego podstawie; jeżeli data jest niedostępna albo błędna, używany jest `new Date()`.
+- Aktywna ścieżka pozostaje bez Firebase, Firestore, audio, Ping, Send/Wyślij, storage, postMessage, query/hash, SheetJS i runtime XLSX.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — dodano `clampFloat(...)`, poprawiono `normalizeContentRect(...)`, dodano formatowanie tytułu `DataSlate` + timestamp i odłączono title od treści wiadomości.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowano z poprawionym `index.html` przez `tools/update_embedded_data.py`.
+- `DataSlate_Offline/index_test.html` — zsynchronizowano z poprawionym `index.html` przez `tools/update_embedded_data.py`.
+- `DataSlate_Offline/tests/etap7_regression.py` — dodano testy regresyjne dla ułamkowego `contentRect`, wariantu zgłoszonego przez użytkownika, message/prefix/suffix/logo oraz tytułu karty niezawierającego treści wiadomości.
+- `DataSlate_Offline/Offline.md` — dopisano niniejszą sekcję dokumentującą prompt, przyczynę, poprawkę, testy, synchronizację i ryzyka.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: `normalizeContentRect(...)` używał `clamp(...)`, a `clamp(...)` wykonywał `Math.floor(number)`.
+- Stan po zmianie: `normalizeContentRect(...)` używa `clampFloat(...)`, który nie obcina wartości ułamkowych do liczb całkowitych.
+- Powód zmiany: `contentRect` jest zestawem proporcji tła, więc ułamki są poprawnym i wymaganym formatem danych.
+- Stan przed zmianą: `buildOfflineSlateHTML(payload)` ustawiał `<title>` na podstawie tekstu wiadomości, np. `dasdas`.
+- Stan po zmianie: `<title>` jest generowany przez `buildSlateDocumentTitle(payload)` i zaczyna się od `DataSlate`, po czym zawiera bezpieczny timestamp.
+- Powód zmiany: treść wiadomości nie powinna trafiać do tytułu karty; timestamp ułatwia identyfikację kolejnych wygenerowanych kart.
+- Stan przed zmianą: regresyjny test Node VM sprawdzał ogólne warianty payloadu, ale nie łapał błędu `Math.floor` na `contentRect` ani złego tytułu.
+- Stan po zmianie: test sprawdza, że przykładowy `contentRect` zachowuje szerokość i wysokość większą niż 0.5, HTML zawiera message/prefix/suffix/logo, brak logo przy `showLogo === false`, a `<title>` zaczyna się od `DataSlate` i nie zawiera tekstu payloadu.
+
+### Testy
+
+- `python3 DataSlate_Offline/tests/etap7_regression.py` — PASS; wszystkie checki, w tym nowy test ułamkowego `contentRect`, wariant użytkownika i tytuł `DataSlate` + timestamp, zakończyły się powodzeniem.
+- `python3 DataSlate_Offline/tests/etap7_regression.py --markdown > /tmp/etap7_markdown.md` — PASS; raport markdown został wygenerowany tym samym runnerem.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json > /tmp/dataslate-data-json-ok` — PASS; JSON danych jest poprawny.
+- `python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py` — PASS; narzędzie synchronizacji kompiluje się, a tymczasowy `__pycache__` usunięto.
+- `node --check` dla wyodrębnionego głównego JS z `index.html` — PASS; Node zaakceptował składnię skryptu.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` — PASS; backup jest zsynchronizowany z index.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — PASS; kopia testowa jest zsynchronizowana z index.
+- Sprawdzenie zgodności `embeddedDataSlateData` w `index.html`, `index_backup.html` i `index_test.html` z `assets/data/data.json` — PASS.
+- `rg -n -i "Firebase|Firestore|onSnapshot|currentRef\.set|dataslate/current|config/firebase-config\.js|localStorage|sessionStorage|postMessage|location\.hash|location\.search|URLSearchParams|SheetJS|XLSX|new Audio|\.play\(|audioEnabled|messageAudioId|messageAudioFile|\bPing\b|\bSend\b|Wyślij|Wyslij" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html DataSlate_Offline/tools/update_embedded_data.py DataSlate_Offline/assets/data/data.json || true` — PASS z wyjaśnieniem: jedyne trafienie dotyczy komentarza `DataSlate_manifest.xlsx` w narzędziu synchronizacji, nie runtime XLSX ani aktywnej ścieżki aplikacji.
+- `git diff --name-only -- DataSlate` — PASS; brak zmian w chronionym folderze `DataSlate/`.
+
+### Synchronizacja i status aktywnej ścieżki
+
+- `DataSlate_Offline/index.html`, `DataSlate_Offline/index_backup.html` i `DataSlate_Offline/index_test.html` są byte-identical po uruchomieniu `python3 DataSlate_Offline/tools/update_embedded_data.py`.
+- `embeddedDataSlateData` w trzech plikach index jest zgodne z `assets/data/data.json`.
+- Aktywna ścieżka nadal działa lokalnie przez formularz → payload → renderer → nową kartę.
+- Aktywna ścieżka nadal nie używa Firebase, Firestore, audio, Ping, Send/Wyślij, storage, postMessage, query/hash, SheetJS ani runtime XLSX.
+- Domyślny język angielski nie został zmieniony.
+- Pliki legacy GM/DataSlate, `DataSlate_manifest.xlsx`, `assets/data/data.json` i folder `DataSlate/` nie zostały usunięte ani zmodyfikowane.
+
+### Ryzyka i następne kroki
+
+- Automatyczny test nadal działa w Node VM i testach statycznych; nie wykonano realnego testu wizualnego w przeglądarce z popupem, bo dotychczasowa infrastruktura Etapu 7 nie zawierała headless browsera.
+- Po wdrożeniu warto ponownie sprawdzić `Generate/Generuj` w prawdziwej przeglądarce online dla tła `DataSlate_Inq.png` lub `WnG.png`, logo `Aquila.png`, włączonych fillerów i wiadomości `dasdas` albo `Test`.
+- Jeżeli problem pojawiłby się dalej mimo poprawnego rozmiaru overlay, następnym krokiem powinno być już badanie CSS/layoutu w realnym DOM, a nie normalizacji `contentRect`.
