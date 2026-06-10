@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automated static/regression checks for DataSlate_Offline Stage 7.
+"""Automated static/regression checks for DataSlate_Offline Stage 8.
 
 The script intentionally uses only Python's standard library plus the local Node
 binary when available. It does not install browser/test dependencies and does not
@@ -32,6 +32,16 @@ ACTIVE_FILES = [
 INDEX_FILES = [MODULE_ROOT / "index.html", MODULE_ROOT / "index_backup.html", MODULE_ROOT / "index_test.html"]
 DATA_FILE = MODULE_ROOT / "assets" / "data" / "data.json"
 TOOL_FILE = MODULE_ROOT / "tools" / "update_embedded_data.py"
+LEGACY_FILES = [
+    MODULE_ROOT / "GM.html",
+    MODULE_ROOT / "DataSlate.html",
+    MODULE_ROOT / "GM_backup.html",
+    MODULE_ROOT / "DataSlate_backup.html",
+    MODULE_ROOT / "GM_test.html",
+    MODULE_ROOT / "DataSlate_test.html",
+    MODULE_ROOT / "config" / "firebase-config.js",
+    MODULE_ROOT / "config" / "FirebaseREADME.md",
+]
 
 
 @dataclass
@@ -367,7 +377,7 @@ const testCode = String.raw`
     fillersEnabled: true,
     prefixLines: ['+++ PREFIX +++'],
     suffixLines: ['--- SUFFIX ---'],
-    text: 'Stage 7 test message\\nSecond line',
+    text: 'Stage 8 test message\\nSecond line',
     createdAt: '2026-06-10T09:42:31Z',
     messageColor: '#112233',
     prefixColor: '#445566',
@@ -407,7 +417,7 @@ const testCode = String.raw`
     if (!title.startsWith('DataSlate ')) throw new Error('generated title does not start with DataSlate: ' + title);
     const firstMessageLine = String(payload.text || '').split(String.fromCharCode(10))[0];
     if (firstMessageLine && title.includes(firstMessageLine)) throw new Error('generated title contains message text: ' + title);
-    if (title === 'Test' || title === 'dasdas' || title === 'Stage 7 test message') throw new Error('generated title uses payload message');
+    if (title === 'Test' || title === 'dasdas' || title === 'Stage 8 test message') throw new Error('generated title uses payload message');
     if (!html.startsWith('<!doctype html>')) throw new Error('generated HTML is not a full document');
     for (const token of [payload.backgroundFile, 'id="overlay"', 'PAYLOAD_CONTENT_RECT']) {{
       if (!html.includes(token)) throw new Error('generated HTML missing token: ' + token);
@@ -431,7 +441,7 @@ const testCode = String.raw`
   if (!parsed.backgrounds || parsed.backgrounds.length !== {len(data.get('backgrounds', []))}) throw new Error('embedded fallback parse failed');
 }})();
 `;
-vm.runInContext(testCode, context, {{ filename: 'stage7-dynamic-test.js' }});
+vm.runInContext(testCode, context, {{ filename: 'stage8-dynamic-test.js' }});
 """
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as temp:
         temp.write(harness)
@@ -462,6 +472,12 @@ def check_node_syntax(index_text: str) -> str:
     return "node --check accepted extracted index.html script"
 
 
+def check_legacy_files_removed() -> str:
+    existing = [path.relative_to(REPO_ROOT).as_posix() for path in LEGACY_FILES if path.exists()]
+    if existing:
+        fail("legacy GM/DataSlate/Firebase files still exist:\n" + "\n".join(existing))
+    return "legacy GM/DataSlate/Firebase files are absent from DataSlate_Offline"
+
 def check_git_clean_baseline() -> str:
     proc = run_command(["git", "status", "--short"])
     detail = proc.stdout.strip() or "clean"
@@ -487,6 +503,7 @@ def collect_checks() -> list[tuple[str, callable[[], str]]]:
         ("data.json parses as JSON", lambda: f"top-level keys={', '.join(data.keys())}"),
         ("embedded data parses and matches data.json", lambda: check_embedded_all(data)),
         ("index backup/test synchronized", check_index_sync),
+        ("legacy GM/DataSlate cleanup", check_legacy_files_removed),
         ("static HTML parser validation", check_html_files),
         ("index JavaScript syntax", lambda: check_node_syntax(index_text)),
         ("update_embedded_data.py compiles", check_py_compile_tool),
