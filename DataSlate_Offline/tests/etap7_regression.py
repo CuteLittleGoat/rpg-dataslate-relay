@@ -201,6 +201,45 @@ def check_external_dependencies(index_text: str, data: dict) -> str:
     return "active index uses local scripts/styles/assets/data only; Google font names remain non-blocking data values"
 
 
+def check_color_and_preview_architecture(index_text: str) -> str:
+    if 'function applyColorPair' in index_text:
+        fail('legacy applyColorPair mutating color inputs is still present')
+    if not re.search(r'<iframe[^>]+id="previewFrame"', index_text):
+        fail('previewFrame iframe not found')
+    if not re.search(r'previewFrame\.srcdoc\s*=\s*buildOfflineSlateHTML\(payload\)', index_text):
+        fail('preview iframe must be fed by buildOfflineSlateHTML(payload)')
+    render_match = re.search(r"function\s+renderPreview\s*\(\s*\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function\s+nonce", index_text)
+    if not render_match:
+        fail('renderPreview body not found')
+    render_body = render_match.group(1)
+    if '.value =' in render_body:
+        fail('renderPreview must not overwrite input values')
+    for token in ['const payload = buildPayload()', 'buildOfflineSlateHTML(payload)', 'previewFrame.srcdoc']:
+        if token not in render_body:
+            fail(f'renderPreview is not using shared final renderer token: {token}')
+    required_color_tokens = [
+        'const validColors',
+        'dataset.lastValidColor',
+        'function getRenderableColor',
+        'function syncColorPickerInput',
+        'function syncColorTextInput',
+        'function commitColorTextInput',
+        "pair.picker.addEventListener('input'",
+        "pair.text.addEventListener('input'",
+        "pair.text.addEventListener('blur'",
+    ]
+    missing = [token for token in required_color_tokens if token not in index_text]
+    if missing:
+        fail('missing color input architecture tokens: ' + ', '.join(missing))
+    if not re.search(r"messageColor:\s*getRenderableColor\(getColorPair\('message'\)\)", index_text):
+        fail('messageColor must be read through getRenderableColor')
+    if not re.search(r"prefixColor:\s*getRenderableColor\(getColorPair\('filler'\)\)", index_text):
+        fail('filler color must be read through getRenderableColor')
+    if not re.search(r"logoColor:\s*getRenderableColor\(getColorPair\('logo'\)\)", index_text):
+        fail('logoColor must be read through getRenderableColor')
+    return 'color controls keep last valid hex without renderPreview mutations; preview iframe uses buildOfflineSlateHTML(payload)'
+
+
 def check_index_structure(index_text: str) -> str:
     checks = {
         "html lang en": r"<html\s+lang=\"en\"",
@@ -215,6 +254,8 @@ def check_index_structure(index_text: str) -> str:
         "parseEmbeddedManifest": r"function\s+parseEmbeddedManifest\s*\(\s*\)",
         "buildPayload": r"function\s+buildPayload\s*\(\s*\)",
         "buildOfflineSlateHTML": r"function\s+buildOfflineSlateHTML\s*\(\s*payload\s*\)",
+        "preview iframe": r"<iframe[^>]+id=\"previewFrame\"",
+        "preview srcdoc shared renderer": r"previewFrame\.srcdoc\s*=\s*buildOfflineSlateHTML\(payload\)",
         "openOfflineSlate": r"function\s+openOfflineSlate\s*\(\s*payload\s*\)",
         "handleGenerate": r"function\s+handleGenerate\s*\(\s*\)",
         "handleGenerate opens lastPayload": r"openOfflineSlate\s*\(\s*lastPayload\s*\)",
@@ -328,9 +369,11 @@ const testCode = String.raw`
     suffixLines: ['--- SUFFIX ---'],
     text: 'Stage 7 test message\\nSecond line',
     createdAt: '2026-06-10T09:42:31Z',
-    messageColor: '#00ff66',
-    prefixSuffixColor: '#ffffff',
-    logoColor: '#d4af37',
+    messageColor: '#112233',
+    prefixColor: '#445566',
+    suffixColor: '#445566',
+    prefixSuffixColor: '#445566',
+    logoColor: '#778899',
     fontPreset: 'Orbitron',
     msgFontSize: 22,
     psFontSize: 12,
@@ -375,6 +418,9 @@ const testCode = String.raw`
     if (!payload.showLogo && html.includes('id="logo" class="logo"')) throw new Error('logo-disabled HTML still renders logo element');
     if (payload.fillersEnabled && !html.includes(payload.prefixLines[0])) throw new Error('fillers-enabled HTML misses prefix');
     if (payload.fillersEnabled && !html.includes(payload.suffixLines[0])) throw new Error('fillers-enabled HTML misses suffix');
+    if (!html.includes('--msg: ' + payload.messageColor)) throw new Error('generated HTML misses message color');
+    if (!html.includes('--ps: ' + payload.prefixColor)) throw new Error('generated HTML misses filler color');
+    if (!html.includes('--logoColor: ' + payload.logoColor)) throw new Error('generated HTML misses logo color');
     if (!payload.fillersEnabled && html.includes('<div id="prefix" class="prefix">' + payload.prefixLines[0])) throw new Error('fillers-disabled HTML still renders visible prefix text');
     if (payload === userReportedVariant && (normalizedRect.w <= 0.5 || normalizedRect.h <= 0.5)) throw new Error('user-reported variant overlay is microscopic');
     for (const forbidden of ['firebase', 'Firestore', 'postMessage', 'localStorage', 'sessionStorage', 'new Audio', '.play(']) {{
@@ -396,7 +442,7 @@ vm.runInContext(testCode, context, {{ filename: 'stage7-dynamic-test.js' }});
             fail("Node dynamic generated-HTML test failed:\nSTDOUT:\n" + proc.stdout + "\nSTDERR:\n" + proc.stderr)
     finally:
         temp_path.unlink(missing_ok=True)
-    return "Node VM generated HTML test passed for fractional contentRect, user-reported overlay variant, timestamp title, logo/filler/message variants and embedded fallback parsing"
+    return "Node VM generated HTML test passed for fractional contentRect, user-reported overlay variant, timestamp title, logo/filler/message/color variants and embedded fallback parsing"
 
 
 def check_node_syntax(index_text: str) -> str:
@@ -446,6 +492,7 @@ def collect_checks() -> list[tuple[str, callable[[], str]]]:
         ("update_embedded_data.py compiles", check_py_compile_tool),
         ("forbidden active mechanisms scan", check_forbidden_mechanisms),
         ("index structure and generator function scan", lambda: check_index_structure(index_text)),
+        ("color controls and shared preview renderer scan", lambda: check_color_and_preview_architecture(index_text)),
         ("data and local asset integrity", lambda: check_data_and_assets(data, index_text)),
         ("external dependency scan", lambda: check_external_dependencies(index_text, data)),
         ("Node VM generated HTML and fallback behavior", lambda: check_dynamic_node(index_text, data)),

@@ -185,52 +185,31 @@
 
     .preview-card {
       position: relative;
-      min-height: 520px;
+      width: 100%;
+      aspect-ratio: 16 / 9;
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
       background: #0a0e14;
     }
 
-    .preview-background {
+    .preview-frame-shell {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      opacity: 0.92;
+      overflow: hidden;
+      background: #000;
     }
 
-    .preview-content {
-      position: absolute;
-      display: grid;
-      grid-template-rows: minmax(0, var(--preview-filler-band, 32px)) minmax(0, 1fr) minmax(0, var(--preview-filler-band, 32px));
-      gap: 10px;
-      padding: 14px;
-      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.85);
+    .preview-frame {
+      width: 960px;
+      height: 540px;
+      border: 0;
+      display: block;
+      background: #000;
+      transform: scale(var(--preview-scale, 1));
+      transform-origin: top left;
+      pointer-events: none;
     }
-
-    .preview-logo {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: clamp(40px, 18%, 92px);
-      height: clamp(40px, 18%, 92px);
-      background: var(--preview-logo-color, #d4af37);
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-position: center;
-      -webkit-mask-size: contain;
-      mask-repeat: no-repeat;
-      mask-position: center;
-      mask-size: contain;
-      opacity: 0.9;
-    }
-
-    .preview-lines,
-    .preview-message { white-space: pre-wrap; overflow-wrap: anywhere; }
-
-    .preview-lines { overflow: hidden; opacity: 0.95; text-align: center; line-height: 1.25; }
-    .preview-message { align-self: center; line-height: 1.32; }
 
     .payload-summary {
       max-height: 220px;
@@ -371,16 +350,12 @@
 
       <aside class="preview-panel" aria-labelledby="previewTitle">
         <h2 id="previewTitle" data-i18n="previewTitle">Working preview</h2>
-        <div class="preview-card" aria-live="polite">
-          <img id="previewBackground" class="preview-background" alt="">
-          <div id="previewLogo" class="preview-logo" aria-hidden="true"></div>
-          <div id="previewContent" class="preview-content">
-            <div id="previewPrefix" class="preview-lines"></div>
-            <div id="previewMsg" class="preview-message"></div>
-            <div id="previewSuffix" class="preview-lines"></div>
+        <div id="previewCard" class="preview-card" aria-live="polite">
+          <div id="previewFrameShell" class="preview-frame-shell">
+            <iframe id="previewFrame" class="preview-frame" title="DataSlate preview"></iframe>
           </div>
         </div>
-        <p class="hint" data-i18n="previewHint">This is a helper preview; Generate opens the final screenshot-ready DataSlate tab.</p>
+        <p class="hint" data-i18n="previewHint">Preview uses the same renderer as Generate, scaled to a 16:9 viewport; exact 1:1 matching depends on the final tab size.</p>
         <pre id="payloadSummary" class="payload-summary" data-i18n="payloadEmpty">Payload has not been built yet.</pre>
       </aside>
     </div>
@@ -1427,7 +1402,7 @@
         statusPopupBlocked: 'Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.',
         statusDataError: 'Błąd ładowania danych',
         previewTitle: 'Podgląd roboczy',
-        previewHint: 'Podgląd jest pomocniczy; przycisk Generuj otwiera finalną kartę DataSlate gotową do screenshotu.',
+        previewHint: 'Podgląd używa tego samego renderera co Generuj i jest skalowany do viewportu 16:9; idealne 1:1 zależy od rozmiaru finalnej karty.',
         payloadEmpty: 'Payload nie został jeszcze zbudowany.',
         fontFallback: 'Google Fonts są niedostępne. Generator użyje fontu systemowego.',
         dataSourceFetch: 'Dane załadowane z assets/data/data.json.',
@@ -1464,7 +1439,7 @@
         statusPopupBlocked: 'The browser blocked the new tab. Allow pop-ups for this page and try again.',
         statusDataError: 'Data loading error',
         previewTitle: 'Working preview',
-        previewHint: 'This is a helper preview; Generate opens the final screenshot-ready DataSlate tab.',
+        previewHint: 'Preview uses the same renderer as Generate, scaled to a 16:9 viewport; exact 1:1 matching depends on the final tab size.',
         payloadEmpty: 'Payload has not been built yet.',
         fontFallback: 'Google Fonts are unavailable. The generator will use a system font.',
         dataSourceFetch: 'Data loaded from assets/data/data.json.',
@@ -1497,12 +1472,9 @@
       restoreDefaultsBtn: document.getElementById('restoreDefaultsBtn'),
       rerollFillersBtn: document.getElementById('rerollFillersBtn'),
       status: document.getElementById('status'),
-      previewBackground: document.getElementById('previewBackground'),
-      previewLogo: document.getElementById('previewLogo'),
-      previewContent: document.getElementById('previewContent'),
-      previewPrefix: document.getElementById('previewPrefix'),
-      previewMsg: document.getElementById('previewMsg'),
-      previewSuffix: document.getElementById('previewSuffix'),
+      previewCard: document.getElementById('previewCard'),
+      previewFrameShell: document.getElementById('previewFrameShell'),
+      previewFrame: document.getElementById('previewFrame'),
       payloadSummary: document.getElementById('payloadSummary')
     };
 
@@ -1510,6 +1482,16 @@
     let fillerState = { prefixLines: [], suffixLines: [] };
     let lastPayload = null;
     let currentLanguage = 'en';
+    const validColors = {
+      message: DEFAULT_FORM_STATE.messageColor,
+      filler: DEFAULT_FORM_STATE.prefixSuffixColor,
+      logo: DEFAULT_FORM_STATE.logoColor
+    };
+    const COLOR_CONTROL_PAIRS = [
+      { key: 'message', text: el.messageColorText, picker: el.messageColorPicker, fallback: DEFAULT_FORM_STATE.messageColor },
+      { key: 'filler', text: el.psColorText, picker: el.psColorPicker, fallback: DEFAULT_FORM_STATE.prefixSuffixColor },
+      { key: 'logo', text: el.logoColorText, picker: el.logoColorPicker, fallback: DEFAULT_FORM_STATE.logoColor }
+    ];
 
     function t(key) {
       return I18N[currentLanguage]?.[key] || I18N.en[key] || I18N.pl[key] || key;
@@ -1546,12 +1528,68 @@
       return Math.min(max, Math.max(min, number));
     }
 
+    function isValidHexColor(value) {
+      return /^#[0-9a-f]{6}$/i.test(String(value || '').trim());
+    }
+
     function normalizeHexColor(value, fallback) {
       const raw = String(value || '').trim();
       if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
       const withoutHash = raw.replace(/^#/, '');
       if (/^[0-9a-f]{6}$/i.test(withoutHash)) return `#${withoutHash.toLowerCase()}`;
       return fallback;
+    }
+
+    function rememberValidColor(pair, color) {
+      const normalized = normalizeHexColor(color, pair.fallback);
+      validColors[pair.key] = normalized;
+      pair.text.dataset.lastValidColor = normalized;
+      pair.picker.dataset.lastValidColor = normalized;
+      return normalized;
+    }
+
+    function getRenderableColor(pair) {
+      const fromText = normalizeHexColor(pair.text.value, '');
+      if (fromText) return rememberValidColor(pair, fromText);
+      const remembered = pair.text.dataset.lastValidColor || pair.picker.dataset.lastValidColor || validColors[pair.key];
+      return normalizeHexColor(remembered, pair.fallback);
+    }
+
+    function syncColorPickerInput(pair) {
+      const normalized = rememberValidColor(pair, pair.picker.value);
+      pair.text.value = normalized;
+      pair.picker.value = normalized;
+      renderPreview();
+    }
+
+    function syncColorTextInput(pair) {
+      const normalized = normalizeHexColor(pair.text.value, '');
+      if (normalized) {
+        rememberValidColor(pair, normalized);
+        pair.picker.value = normalized;
+      }
+      renderPreview();
+    }
+
+    function commitColorTextInput(pair) {
+      const normalized = normalizeHexColor(pair.text.value, '');
+      const color = normalized || getRenderableColor(pair);
+      rememberValidColor(pair, color);
+      pair.text.value = color;
+      pair.picker.value = color;
+      renderPreview();
+    }
+
+    function initializeColorControls() {
+      COLOR_CONTROL_PAIRS.forEach((pair) => {
+        const normalized = rememberValidColor(pair, pair.text.value || pair.picker.value || pair.fallback);
+        pair.text.value = normalized;
+        pair.picker.value = normalized;
+      });
+    }
+
+    function getColorPair(key) {
+      return COLOR_CONTROL_PAIRS.find((pair) => pair.key === key);
     }
 
     function resolveHexColor(textInput, pickerInput, fallback) {
@@ -1610,44 +1648,21 @@
       el.fontWarning.classList.toggle('visible', !!unavailable);
     }
 
-    function applyColorPair(textEl, pickerEl, fallback) {
-      const color = resolveHexColor(textEl.value, pickerEl.value, fallback);
-      textEl.value = color;
-      pickerEl.value = color;
-      return color;
+    function updatePreviewScale() {
+      const frameWidth = 960;
+      const frameHeight = 540;
+      const shellWidth = el.previewFrameShell.clientWidth || frameWidth;
+      const scale = Math.max(0.1, shellWidth / frameWidth);
+      el.previewFrameShell.style.height = `${Math.round(frameHeight * scale)}px`;
+      el.previewFrame.style.setProperty('--preview-scale', String(scale));
     }
 
     function renderPreview() {
-      const bg = safeGet(manifest.backgrounds || [], el.backgroundSelect.value);
-      const logo = safeGet(manifest.logos || [], el.logoSelect.value);
-      const selectedFont = getSelectedFont();
-      const messageColor = applyColorPair(el.messageColorText, el.messageColorPicker, DEFAULT_FORM_STATE.messageColor);
-      const fillerColor = applyColorPair(el.psColorText, el.psColorPicker, DEFAULT_FORM_STATE.prefixSuffixColor);
-      const logoColor = applyColorPair(el.logoColorText, el.logoColorPicker, DEFAULT_FORM_STATE.logoColor);
-      const rect = CONTENT_RECTS_BY_BACKGROUND_ID[Number(bg?.id)] || DEFAULT_CONTENT_RECT;
-
-      el.previewBackground.src = bg?.file || '';
-      el.previewLogo.style.display = el.showLogo.checked && logo ? 'block' : 'none';
-      el.previewLogo.style.setProperty('--preview-logo-color', logoColor);
-      el.previewLogo.style.webkitMaskImage = logo ? `url(${logo.file})` : 'none';
-      el.previewLogo.style.maskImage = logo ? `url(${logo.file})` : 'none';
-      el.previewContent.style.left = `${rect.x * 100}%`;
-      el.previewContent.style.top = `${rect.y * 100}%`;
-      el.previewContent.style.width = `${rect.w * 100}%`;
-      el.previewContent.style.height = `${rect.h * 100}%`;
-      el.previewContent.style.setProperty('--preview-filler-band', `${clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize) * clamp(el.fillerBandLines.value, 1, 6, DEFAULT_FORM_STATE.fillerBandLines) * 1.25}px`);
-      el.previewContent.style.fontFamily = `"${selectedFont?.font || 'Share Tech Mono'}"${FONT_FALLBACK}`;
-      el.previewPrefix.textContent = el.fillersEnabled.checked ? fillerState.prefixLines.join('\n') : '';
-      el.previewSuffix.textContent = el.fillersEnabled.checked ? fillerState.suffixLines.join('\n') : '';
-      el.previewMsg.textContent = el.message.value || '';
-      el.previewPrefix.style.color = fillerColor;
-      el.previewSuffix.style.color = fillerColor;
-      el.previewMsg.style.color = messageColor;
-      el.previewPrefix.style.fontSize = `${clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize)}px`;
-      el.previewSuffix.style.fontSize = `${clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize)}px`;
-      el.previewMsg.style.fontSize = `${clamp(el.msgFontSize.value, 12, 80, DEFAULT_FORM_STATE.msgFontSize)}px`;
       el.fillerLineCount.disabled = !el.fillersEnabled.checked;
       updateFontWarning();
+      updatePreviewScale();
+      const payload = buildPayload();
+      el.previewFrame.srcdoc = buildOfflineSlateHTML(payload);
     }
 
     function nonce() {
@@ -1678,10 +1693,10 @@
         suffixLines: el.fillersEnabled.checked ? fillerState.suffixLines : [],
         fillerLineCount: clamp(el.fillerLineCount.value, 1, 5, DEFAULT_FORM_STATE.fillerLineCount),
         fillerBandLines: clamp(el.fillerBandLines.value, 1, 6, DEFAULT_FORM_STATE.fillerBandLines),
-        messageColor: resolveHexColor(el.messageColorText.value, el.messageColorPicker.value, DEFAULT_FORM_STATE.messageColor),
-        logoColor: resolveHexColor(el.logoColorText.value, el.logoColorPicker.value, DEFAULT_FORM_STATE.logoColor),
-        prefixColor: resolveHexColor(el.psColorText.value, el.psColorPicker.value, DEFAULT_FORM_STATE.prefixSuffixColor),
-        suffixColor: resolveHexColor(el.psColorText.value, el.psColorPicker.value, DEFAULT_FORM_STATE.prefixSuffixColor),
+        messageColor: getRenderableColor(getColorPair('message')),
+        logoColor: getRenderableColor(getColorPair('logo')),
+        prefixColor: getRenderableColor(getColorPair('filler')),
+        suffixColor: getRenderableColor(getColorPair('filler')),
         msgFontSize: clamp(el.msgFontSize.value, 12, 80, DEFAULT_FORM_STATE.msgFontSize),
         prefixFontSize: clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize),
         suffixFontSize: clamp(el.psFontSize.value, 10, 60, DEFAULT_FORM_STATE.psFontSize),
@@ -1706,6 +1721,7 @@
       el.psColorPicker.value = DEFAULT_FORM_STATE.prefixSuffixColor;
       el.logoColorText.value = DEFAULT_FORM_STATE.logoColor;
       el.logoColorPicker.value = DEFAULT_FORM_STATE.logoColor;
+      initializeColorControls();
       el.msgFontSize.value = String(DEFAULT_FORM_STATE.msgFontSize);
       el.psFontSize.value = String(DEFAULT_FORM_STATE.psFontSize);
       el.message.value = '';
@@ -1972,18 +1988,19 @@
         el.fillerSelect,
         el.fillersEnabled,
         el.fillerBandLines,
-        el.messageColorText,
-        el.messageColorPicker,
-        el.psColorText,
-        el.psColorPicker,
-        el.logoColorText,
-        el.logoColorPicker,
         el.msgFontSize,
         el.psFontSize,
         el.message
       ].forEach((node) => {
         node.addEventListener('input', renderPreview);
         node.addEventListener('change', renderPreview);
+      });
+      COLOR_CONTROL_PAIRS.forEach((pair) => {
+        pair.picker.addEventListener('input', () => syncColorPickerInput(pair));
+        pair.picker.addEventListener('change', () => syncColorPickerInput(pair));
+        pair.text.addEventListener('input', () => syncColorTextInput(pair));
+        pair.text.addEventListener('change', () => commitColorTextInput(pair));
+        pair.text.addEventListener('blur', () => commitColorTextInput(pair));
       });
       el.fillerLineCount.addEventListener('input', rerollFillers);
       el.fillerLineCount.addEventListener('change', rerollFillers);
@@ -1997,6 +2014,13 @@
         el.message.focus();
       });
       el.restoreDefaultsBtn.addEventListener('click', restoreDefaults);
+      if (window.ResizeObserver) {
+        const observer = new ResizeObserver(() => {
+          updatePreviewScale();
+          renderPreview();
+        });
+        observer.observe(el.previewCard);
+      }
     }
 
     (async function init() {
