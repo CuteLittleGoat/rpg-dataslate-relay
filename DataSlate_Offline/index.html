@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -262,34 +262,34 @@
     <header>
       <div>
         <h1 data-i18n="appTitle">DataSlate Offline</h1>
-        <p class="muted" data-i18n="intro">Przygotuj lokalny payload ekranu DataSlate do dalszego renderowania w kolejnych etapach.</p>
+        <p class="muted" data-i18n="intro">Prepare a local DataSlate screen and generate a screenshot-ready tab.</p>
       </div>
       <div class="field" style="min-width:170px">
-        <label for="languageSelect" data-i18n="languageLabel">Język interfejsu</label>
+        <label for="languageSelect" data-i18n="languageLabel">Interface language</label>
         <select id="languageSelect" autocomplete="off">
-          <option value="pl">Polski</option>
           <option value="en">English</option>
+          <option value="pl">Polski</option>
         </select>
       </div>
     </header>
 
     <div class="layout">
       <section aria-labelledby="generatorTitle">
-        <h2 id="generatorTitle" data-i18n="generatorTitle">Panel generatora</h2>
+        <h2 id="generatorTitle" data-i18n="generatorTitle">Generator panel</h2>
         <div class="form-grid" style="margin-top:14px">
           <div class="field">
-            <label for="backgroundSelect" data-i18n="backgroundLabel">Tło</label>
+            <label for="backgroundSelect" data-i18n="backgroundLabel">Background</label>
             <select id="backgroundSelect"></select>
           </div>
 
           <div class="field">
-            <label for="logoSelect" data-i18n="logoLabel">Logotyp</label>
+            <label for="logoSelect" data-i18n="logoLabel">Logo</label>
             <select id="logoSelect"></select>
           </div>
 
           <label class="inline field" for="showLogo">
             <input type="checkbox" id="showLogo">
-            <span data-i18n="showLogoLabel">Pokaż logo</span>
+            <span data-i18n="showLogoLabel">Show logo</span>
           </label>
 
           <div class="field">
@@ -305,21 +305,21 @@
 
           <label class="inline field" for="fillersEnabled">
             <input type="checkbox" id="fillersEnabled" checked>
-            <span data-i18n="fillersEnabledLabel">Pokaż fillery</span>
+            <span data-i18n="fillersEnabledLabel">Show fillers</span>
           </label>
 
           <div class="field">
-            <label for="fillerLineCount" data-i18n="fillerLinesLabel">Liczba linii fillerów</label>
+            <label for="fillerLineCount" data-i18n="fillerLinesLabel">Filler line count</label>
             <input type="number" id="fillerLineCount" min="1" max="5" value="3">
           </div>
 
           <div class="field">
-            <label for="fillerBandLines" data-i18n="fillerBandLabel">Wysokość strefy fillerów</label>
+            <label for="fillerBandLines" data-i18n="fillerBandLabel">Filler zone height</label>
             <input type="number" id="fillerBandLines" min="1" max="6" value="2">
           </div>
 
           <div class="field">
-            <label for="messageColorText" data-i18n="messageColorLabel">Kolor wiadomości</label>
+            <label for="messageColorText" data-i18n="messageColorLabel">Message color</label>
             <div class="color-pair">
               <input type="text" id="messageColorText" value="#00ff66" placeholder="#RRGGBB">
               <input type="color" id="messageColorPicker" value="#00ff66">
@@ -327,7 +327,7 @@
           </div>
 
           <div class="field">
-            <label for="psColorText" data-i18n="fillerColorLabel">Kolor fillerów</label>
+            <label for="psColorText" data-i18n="fillerColorLabel">Filler color</label>
             <div class="color-pair">
               <input type="text" id="psColorText" value="#ffffff" placeholder="#RRGGBB">
               <input type="color" id="psColorPicker" value="#ffffff">
@@ -335,7 +335,7 @@
           </div>
 
           <div class="field">
-            <label for="logoColorText" data-i18n="logoColorLabel">Kolor loga</label>
+            <label for="logoColorText" data-i18n="logoColorLabel">Logo color</label>
             <div class="color-pair">
               <input type="text" id="logoColorText" value="#d4af37" placeholder="#RRGGBB">
               <input type="color" id="logoColorPicker" value="#d4af37">
@@ -343,35 +343,35 @@
           </div>
 
           <div class="field">
-            <label for="msgFontSize" data-i18n="messageSizeLabel">Rozmiar wiadomości</label>
+            <label for="msgFontSize" data-i18n="messageSizeLabel">Message size</label>
             <input type="number" id="msgFontSize" min="12" max="80" value="20">
           </div>
 
           <div class="field">
-            <label for="psFontSize" data-i18n="fillerSizeLabel">Rozmiar fillerów</label>
+            <label for="psFontSize" data-i18n="fillerSizeLabel">Filler size</label>
             <input type="number" id="psFontSize" min="10" max="60" value="12">
           </div>
 
           <div class="field full">
-            <label for="message" data-i18n="messageLabel">Treść wiadomości</label>
-            <textarea id="message" data-i18n-placeholder="messagePlaceholder" placeholder="Wpisz treść komunikatu dla DataSlate..."></textarea>
+            <label for="message" data-i18n="messageLabel">Message text</label>
+            <textarea id="message" data-i18n-placeholder="messagePlaceholder" placeholder="Enter the DataSlate message text..."></textarea>
           </div>
 
           <div class="actions full">
-            <button type="button" class="primary" id="generateBtn" data-i18n="generateBtn">Generuj</button>
-            <button type="button" id="clearMessageBtn" data-i18n="clearMessageBtn">Wyczyść treść</button>
-            <button type="button" class="secondary" id="restoreDefaultsBtn" data-i18n="restoreDefaultsBtn">Reset formularza</button>
-            <button type="button" class="secondary" id="rerollFillersBtn" data-i18n="rerollFillersBtn">Losuj fillery</button>
+            <button type="button" class="primary" id="generateBtn" data-i18n="generateBtn">Generate</button>
+            <button type="button" id="clearMessageBtn" data-i18n="clearMessageBtn">Clear text</button>
+            <button type="button" class="secondary" id="restoreDefaultsBtn" data-i18n="restoreDefaultsBtn">Reset form</button>
+            <button type="button" class="secondary" id="rerollFillersBtn" data-i18n="rerollFillersBtn">Reroll fillers</button>
           </div>
 
           <div class="full">
-            <span class="status" id="status" data-i18n="statusLoading">Ładowanie danych...</span>
+            <span class="status" id="status" data-i18n="statusLoading">Loading data...</span>
           </div>
         </div>
       </section>
 
       <aside class="preview-panel" aria-labelledby="previewTitle">
-        <h2 id="previewTitle" data-i18n="previewTitle">Podgląd roboczy</h2>
+        <h2 id="previewTitle" data-i18n="previewTitle">Working preview</h2>
         <div class="preview-card" aria-live="polite">
           <img id="previewBackground" class="preview-background" alt="">
           <div id="previewLogo" class="preview-logo" aria-hidden="true"></div>
@@ -381,8 +381,8 @@
             <div id="previewSuffix" class="preview-lines"></div>
           </div>
         </div>
-        <p class="hint" data-i18n="previewHint">Podgląd jest pomocniczy; finalne renderowanie nowej karty należy do kolejnego etapu.</p>
-        <pre id="payloadSummary" class="payload-summary" data-i18n="payloadEmpty">Payload nie został jeszcze zbudowany.</pre>
+        <p class="hint" data-i18n="previewHint">This is a helper preview; Generate opens the final screenshot-ready DataSlate tab.</p>
+        <pre id="payloadSummary" class="payload-summary" data-i18n="payloadEmpty">Payload has not been built yet.</pre>
       </aside>
     </div>
   </main>
@@ -1510,14 +1510,14 @@
     let manifest = { backgrounds: [], logos: [], fonts: [], fillers: [] };
     let fillerState = { prefixLines: [], suffixLines: [] };
     let lastPayload = null;
-    let currentLanguage = 'pl';
+    let currentLanguage = 'en';
 
     function t(key) {
-      return I18N[currentLanguage]?.[key] || I18N.pl[key] || key;
+      return I18N[currentLanguage]?.[key] || I18N.en[key] || I18N.pl[key] || key;
     }
 
     function applyLanguage(lang) {
-      currentLanguage = I18N[lang] ? lang : 'pl';
+      currentLanguage = I18N[lang] ? lang : 'en';
       document.documentElement.lang = currentLanguage;
       document.querySelectorAll('[data-i18n]').forEach((node) => {
         node.textContent = t(node.dataset.i18n);

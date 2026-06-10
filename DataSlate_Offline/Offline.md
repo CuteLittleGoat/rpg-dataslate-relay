@@ -1731,3 +1731,115 @@ Zakres Etapu 4 obejmował: przeczytanie `Offline.md`, `index.html`, `index_backu
 - W części przeglądarek `file://` może mieć różne reguły bazowych ścieżek assetów; dodano `<base href="document.baseURI">`, ale scenariusz powinien zostać potwierdzony ręcznie na docelowym systemie.
 - Jeżeli zmieni się `DataSlate_manifest.xlsx`, trzeba najpierw zaktualizować `assets/data/data.json` dotychczasowym lub osobnym procesem, a następnie uruchomić `python3 DataSlate_Offline/tools/update_embedded_data.py`.
 - Po ręcznym potwierdzeniu Etapu 4 można przejść do Etapu 5.
+
+## Aktualizacja — 2026-06-10 — angielski jako domyślny język interfejsu
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md oraz aktualne pliki:
+- DataSlate_Offline/index.html
+- DataSlate_Offline/index_backup.html
+- DataSlate_Offline/index_test.html
+
+Wprowadź drobną zmianę przed Etapem 4:
+
+Język angielski ma być językiem domyślnym aplikacji DataSlate Offline.
+
+Wymagania:
+
+1. W DataSlate_Offline/index.html ustaw język angielski jako domyślny:
+   - domyślna wartość mechanizmu językowego ma być `en`,
+   - dokument powinien startować z `lang="en"`,
+   - po pierwszym otwarciu aplikacji interfejs ma być po angielsku.
+
+2. W menu wyboru języka kolejność opcji ma być:
+   - English jako pierwsza opcja,
+   - Polski jako druga opcja.
+
+3. Zachowaj możliwość ręcznego przełączenia interfejsu na polski.
+
+4. Wszystkie istniejące komunikaty PL/EN mają nadal działać, w tym:
+   - komunikat fallbacku Google Fonts,
+   - statusy generatora,
+   - przyszłe komunikaty związane z Etapem 4, jeżeli są już przygotowane.
+
+5. Zsynchronizuj:
+   - DataSlate_Offline/index_backup.html
+   - DataSlate_Offline/index_test.html
+
+   z poprawionym DataSlate_Offline/index.html.
+
+6. Zaktualizuj DataSlate_Offline/Offline.md:
+   - dopisz krótką sekcję dokumentującą tę zmianę,
+   - zaznacz, że od tej zmiany językiem domyślnym DataSlate Offline jest angielski,
+   - zaznacz, że w menu języka pierwszą opcją jest English, a drugą Polski,
+   - zaznacz, że polski pozostaje dostępny jako ręczny wybór użytkownika.
+
+7. Nie zmieniaj zakresu Etapu 4.
+8. Nie modyfikuj folderu DataSlate/.
+9. Nie usuwaj plików GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html ani DataSlate_test.html.
+10. Nie zmieniaj DataSlate_manifest.xlsx ani assets/data/data.json.
+11. Nie dodawaj Firebase, Firestore, audio, Ping, Wyślij, localStorage, sessionStorage, postMessage, query/hash ani innych mechanizmów wykluczonych w Offline.md.
+
+Testy/sprawdzenia:
+
+- sprawdź, że index.html ma domyślny język angielski,
+- sprawdź, że select języka ma English jako pierwszą opcję i Polski jako drugą,
+- sprawdź, że przełączenie na polski nadal jest możliwe,
+- sprawdź, że index_backup.html i index_test.html są zsynchronizowane z index.html,
+- sprawdź, że nie zmodyfikowano folderu DataSlate/,
+- sprawdź status repozytorium przed i po zmianach.
+
+Na końcu przygotuj krótkie podsumowanie:
+- co zmieniono,
+- jakie pliki zmieniono,
+- czy język angielski jest teraz domyślny,
+- czy można wrócić do przygotowania Etapu 4.
+
+Utwórz PR z tą zmianą.
+
+### Zakres prac
+
+- Przeczytano aktualny kontekst `DataSlate_Offline/Offline.md` oraz aktualne pliki `index.html`, `index_backup.html` i `index_test.html`.
+- Ustawiono angielski jako domyślny język interfejsu DataSlate Offline przed Etapem 4.
+- Zmieniono kolejność opcji w menu języka: pierwsza opcja to `English`, druga opcja to `Polski`.
+- Zachowano obsługę ręcznego przełączania interfejsu na język polski.
+- Zsynchronizowano `index_backup.html` i `index_test.html` z poprawionym `index.html`.
+- Nie zmieniono zakresu Etapu 4.
+
+### Ustalenia i decyzje
+
+- Od tej zmiany domyślnym językiem DataSlate Offline jest angielski.
+- Dokument startuje z `lang="en"`, a domyślna wartość mechanizmu językowego to `en`.
+- Menu języka prezentuje `English` jako pierwszą opcję i `Polski` jako drugą opcję.
+- Polski pozostaje dostępny jako ręczny wybór użytkownika.
+- Istniejące komunikaty PL/EN pozostają w mechanizmie tłumaczeń, w tym fallback Google Fonts, statusy generatora i przygotowane komunikaty dotyczące źródła danych.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — ustawiono domyślny język angielski, zmieniono kolejność opcji języka i początkowy tekst interfejsu na angielski.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowano z `index.html`.
+- `DataSlate_Offline/index_test.html` — zsynchronizowano z `index.html`.
+- `DataSlate_Offline/Offline.md` — dopisano pełny prompt użytkownika oraz dokumentację tej zmiany.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: dokument startował z `lang="pl"`, mechanizm językowy inicjalizował `currentLanguage` jako `pl`, a pierwszą opcją w selekcie języka był `Polski`.
+- Stan po zmianie: dokument startuje z `lang="en"`, mechanizm językowy inicjalizuje `currentLanguage` jako `en`, a pierwszą opcją w selekcie języka jest `English`.
+- Powód zmiany: DataSlate Offline ma po pierwszym otwarciu prezentować interfejs po angielsku, przy zachowaniu możliwości ręcznego przełączenia na polski.
+
+### Testy
+
+- Sprawdzono statycznie, że `index.html` ma `lang="en"` oraz `currentLanguage = 'en'`.
+- Sprawdzono statycznie, że select języka ma `English` jako pierwszą opcję i `Polski` jako drugą opcję.
+- Sprawdzono statycznie, że polski nadal istnieje w słowniku `I18N` i pozostaje opcją wyboru w selekcie języka.
+- Sprawdzono, że `index_backup.html` i `index_test.html` są binarnie zgodne z `index.html` po synchronizacji.
+- Sprawdzono status repozytorium przed zmianą i po zmianach.
+- Sprawdzono, że folder `DataSlate/` nie został zmodyfikowany.
+
+### Ryzyka i następne kroki
+
+- Zmiana nie rozszerza ani nie modyfikuje zakresu Etapu 4.
+- Można wrócić do przygotowania Etapu 4 po tej zmianie.
