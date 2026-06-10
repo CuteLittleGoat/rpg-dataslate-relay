@@ -2086,3 +2086,129 @@ Drugi blok w wiadomości użytkownika powtarzał tę samą treść od `Repozytor
 - Pliki referencyjne/historyczne nadal zawierają aktywny kod online, Firebase, Firestore, Send/Wyślij, Ping i audio. Nie jest to błąd aktywnego generatora, ale wymaga ostrożności przy przyszłych pracach i ewentualnej decyzji, czy usunąć lub zarchiwizować te pliki w późniejszym etapie.
 - Dokumenty legacy zachowują pełne historyczne instrukcje online po dodanej notatce. Jeżeli w przyszłości `docs/README.md` ma stać się aktualną instrukcją użytkownika DataSlate Offline, należy przepisać go jako dokument offline zamiast utrzymywać go jako materiał referencyjny.
 - Brak znanych blokerów kodowych dla przejścia do Etapu 7.
+
+## Aktualizacja — 2026-06-10 — Etap 7: automatyczne testy funkcjonalne i regresyjne
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z zapisanym tam planem, decyzjami oraz stylem dokumentowania zmian.
+
+Zrealizuj:
+
+Etap 7 — testy funkcjonalne i regresyjne wykonywane automatycznie przez agenta AI
+
+Celem Etapu 7 jest przeprowadzenie maksymalnie szerokiego zestawu testów automatycznych, statycznych i — jeśli środowisko pozwoli — headless browser dla DataSlate_Offline, bez wymagania ręcznego przeklikiwania aplikacji przez użytkownika.
+
+Użytkownik nie będzie przeprowadzał testów ręcznych. Nie zakładaj, że użytkownik ręcznie otworzy aplikację, przeklika formularz albo sprawdzi file:// na Windowsie. Wykonaj wszystkie testy, które są możliwe automatycznie w środowisku Codex. Jeżeli jakiś test nie jest możliwy technicznie, nie blokuj PR wyłącznie z tego powodu, ale opisz w Offline.md:
+- co próbowano przetestować,
+- dlaczego test nie był możliwy,
+- jakie ryzyko pozostaje,
+- czy ryzyko jest blockerem, czy tylko ograniczeniem środowiskowym.
+
+Najważniejsze decyzje obowiązujące przed Etapem 7:
+
+- Głównym aktywnym plikiem modułu offline jest DataSlate_Offline/index.html.
+- DataSlate_Offline/index.html jest samodzielnym generatorem offline.
+- Po kliknięciu Generate/Generuj aplikacja otwiera nową kartę z gotowym ekranem DataSlate.
+- Językiem domyślnym aplikacji jest angielski.
+- Polski pozostaje dostępny jako ręczny wybór użytkownika.
+- Menu języka ma kolejność: English jako pierwsza opcja, Polski jako druga.
+- index_backup.html i index_test.html muszą być zsynchronizowane z index.html.
+- Dane są ładowane hybrydowo: fetch('assets/data/data.json', { cache: 'no-store' }) jako ścieżka preferowana oraz embeddedDataSlateData jako fallback dla file:// albo nieudanego fetch.
+- Embedded data są generowanym fallbackiem, nie osobnym źródłem prawdy.
+- DataSlate_Offline/tools/update_embedded_data.py pozostaje narzędziem synchronizującym embedded data i kopie index.
+- Aktywna ścieżka offline ma być wolna od Firebase, Firestore, Send/Wyślij, Ping i aktywnego audio.
+- Brak Google Fonts nie może blokować działania.
+- Nie wolno modyfikować folderu DataSlate/.
+- Pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html są plikami referencyjnymi/historycznymi i nie są aktywną ścieżką generatora.
+- Pliki dokumentacji legacy mogą zawierać opis starego workflow online, ale powinny być oznaczone jako reference-only/legacy.
+- Nie usuwaj DataSlate_manifest.xlsx.
+- Nie usuwaj assets/data/data.json.
+
+Zakres Etapu 7 obejmuje przeczytanie i analizę `Offline.md`, aktywnych plików `index.html`, `index_backup.html`, `index_test.html`, `tools/update_embedded_data.py`, `assets/data/data.json` oraz referencyjnych/historycznych plików GM/DataSlate wyłącznie po to, aby upewnić się, że nie są aktywną ścieżką. Należy przygotować prosty automatyczny zestaw testów bez ciężkiej infrastruktury; wykonać i udokumentować `git status` przed zmianami, walidację JSON, poprawność i zgodność `embeddedDataSlateData`, synchronizację kopii index, statyczną walidację HTML, `node --check` dla JS, `python3 -m py_compile` dla narzędzia synchronizacji oraz brak zmian w chronionym folderze `DataSlate/`. Należy sprawdzić aktywną ścieżkę pod kątem zakazanych mechanizmów: Firebase, Firestore, `firebase-config.js`, `config/firebase-config.js`, `initializeApp`, `getFirestore`, `dataslate/current`, `currentRef.set`, `onSnapshot`, Send/Wyślij, Ping, `new Audio`, `.play()`, `audioEnabled`, `messageAudioId`, `messageAudioFile`, odblokowania audio, `localStorage`, `sessionStorage`, `postMessage`, `location.hash`, `location.search`, `URLSearchParams`, SheetJS oraz runtime'owego parsowania XLSX. Sama lista `audios` w `data.json` i embedded fallbacku może pozostać, jeśli renderer jej nie używa.
+
+Należy automatycznie potwierdzić strukturę `index.html`: `<html lang="en">`, domyślne `currentLanguage = 'en'`, kolejność języków English/Polski, słowniki `I18N` dla en i pl, `DATA_URL` wskazujący `assets/data/data.json`, `loadManifest()` z `fetch(..., { cache: 'no-store' })`, istnienie `parseEmbeddedManifest()`, embedded fallbacku, `buildPayload()`, `buildOfflineSlateHTML(payload)`, `openOfflineSlate(payload)`, `handleGenerate()` wywołującego `openOfflineSlate(lastPayload)`, generowanie kompletnego dokumentu HTML z tłem, overlayem, contentRect, prefixami/suffixami, wiadomością i opcjonalnym logo, lokalne ścieżki assetów oraz brak Firebase, audio i komunikacji z inną kartą w finalnym HTML.
+
+Należy automatycznie sprawdzić dane i assety: liczby backgrounds/logos/fonts/fillers, istnienie lokalnych plików tła, logo i audio, tablice `prefixes`/`suffixes`, wymagane pola fontów, zgodność teł z `CONTENT_RECTS_BY_BACKGROUND_ID` albo fallbackiem `DEFAULT_CONTENT_RECT`, względność ścieżek i brak zewnętrznych URL-i. Należy spróbować testu działania generatora bez ręcznej interakcji: preferowany headless browser z lokalnym serwerem, wypełnieniem formularza i przechwyceniem popupu; jeśli headless browser nie jest dostępny, należy wykonać statyczną analizę albo Node/jsdom/VM i przynajmniej sprawdzić `buildOfflineSlateHTML(payload)` dla przykładowych payloadów. Należy sprawdzić fetch + embedded fallback; jeśli nie da się w przeglądarce, statycznie potwierdzić `try/catch`, fallback i zgodność embedded JSON. Należy przygotować lub zasymulować payloady dla `showLogo` true/false, `fillersEnabled` true/false, pustej wiadomości, wiadomości wieloliniowej, różnych kolorów, różnych rozmiarów fontów, brakującego/niepoprawnego `contentRect`, brakującego font preset oraz co najmniej dwóch różnych teł. Należy sprawdzić brak wymaganych zewnętrznych zależności: CDN, Firebase, Google Fonts jako warunku działania, zewnętrznych skryptów, obrazów i JSON-a.
+
+Należy utworzyć albo zaktualizować raport testowy, preferencyjnie `DataSlate_Offline/tests/Etap7_report.md`, z listą testów, wynikami PASS/FAIL/SKIPPED/NOT AVAILABLE, komendami, środowiskiem, opisem headless, testami niemożliwymi, problemami, decyzją o blockerach i rekomendacjami dla Etapu 8. Jeżeli zostaną znalezione małe bezpieczne błędy, należy je poprawić, powtórzyć testy, zsynchronizować kopie index i embedded data, udokumentować poprawki. Większe błędy lub decyzje produktowe należy opisać jako blocker albo ryzyko bez dużej przebudowy.
+
+Należy dopisać nową sekcję do `Offline.md` dokumentującą wykonanie Etapu 7: pełny prompt użytkownika, zakres prac, ustalenia, informację, że użytkownik nie będzie wykonywać testów ręcznych, strategię testów automatycznych/statycznych/headless, wykonane i niemożliwe testy, wyniki, błędy i poprawki, synchronizację `index_backup.html` i `index_test.html`, zgodność embedded data z `data.json`, brak Firebase/audio/Ping/Send/storage/postMessage/query/hash, zachowanie domyślnego angielskiego i ręcznego polskiego, zmienione pliki, ryzyka i następne kroki oraz wniosek, czy można przejść do Etapu 8.
+
+Nie rób w Etapie 7: nie wymagaj ręcznych testów od użytkownika, nie blokuj PR tylko z powodu braku ręcznego testu file:// na Windows, nie przeprojektowuj renderera z Etapu 5 poza małą bezpieczną poprawką, nie zmieniaj domyślnego języka z angielskiego, nie usuwaj plików GM/DataSlate reference-only ani dokumentacji legacy, nie usuwaj `DataSlate_manifest.xlsx` ani `assets/data/data.json`, nie modyfikuj `DataSlate/`, nie dodawaj Firebase, audio, Ping, Send/Wyślij, storage, postMessage, query/hash, ręcznego wyboru data.json, runtime'owego parsowania XLSX ani ciężkiej infrastruktury testowej, jeśli proste skrypty wystarczą.
+
+Na końcu przygotuj krótkie podsumowanie: czy Etap 7 został zakończony, jakie testy automatyczne/statyczne/headless wykonano, które przeszły, które były niemożliwe i dlaczego, czy wykryto błędy i czy je poprawiono, czy aktywny generator nadal działa bez Firebase/audio/Ping/Send, czy trzy pliki index są zsynchronizowane, czy embedded fallback jest zgodny z data.json, czy domyślny angielski i ręczny polski są zachowane, czy można przejść do Etapu 8, jakie są blokery lub ryzyka. Utwórz PR z tymi zmianami.
+
+Uwaga dokumentacyjna: w wiadomości użytkownika powyższy prompt został powtórzony drugi raz w tej samej treści po słowach „Repozytorium: CuteLittleGoat/rpg-dataslate-relay”; druga kopia była semantycznie identyczna i nakazywała ten sam Etap 7 oraz utworzenie PR.
+
+### Zakres prac
+
+- Przeczytano aktualny `DataSlate_Offline/Offline.md` przed analizą i zmianami.
+- Przeanalizowano aktywną ścieżkę `DataSlate_Offline/index.html`, `index_backup.html`, `index_test.html`, `tools/update_embedded_data.py` i `assets/data/data.json`.
+- Sprawdzono pliki referencyjne/historyczne GM/DataSlate tylko w zakresie ich statusu jako nieaktywnej ścieżki.
+- Dodano lekki automatyczny runner regresyjny bez zewnętrznych zależności.
+- Dodano raport Etapu 7 w `DataSlate_Offline/tests/Etap7_report.md`.
+- Nie zmieniono aktywnego generatora, danych ani narzędzia synchronizacji, ponieważ testy nie wykryły małego błędu wymagającego poprawki w `index.html`.
+
+### Ustalenia i decyzje
+
+- Użytkownik nie będzie wykonywać testów ręcznych; Etap 7 został wykonany automatycznie w środowisku Codex.
+- Headless browser nie był dostępny, więc test E2E w realnej przeglądarce oznaczono jako ograniczenie środowiskowe, nie blocker.
+- Zastępczy test funkcjonalny wykonano przez Node VM: wyodrębniono skrypt z `index.html`, uruchomiono go z minimalnym stubem DOM i wywołano `buildOfflineSlateHTML(payload)` dla wielu wariantów payloadu.
+- Nie dodano Playwright/Puppeteer/Chromium ani ciężkiej infrastruktury testowej.
+- Lista `audios` w `data.json` i embedded fallbacku pozostała dopuszczalna, bo testy potwierdzają brak aktywnego odtwarzania audio.
+- Pojedyncze statyczne trafienie słowa `DataSlate_manifest.xlsx` w komentarzu `tools/update_embedded_data.py` nie oznacza runtime'owego parsowania XLSX i nie jest błędem aktywnej ścieżki.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/tests/etap7_regression.py` — dodano lekki automatyczny runner regresyjny dla Etapu 7.
+- `DataSlate_Offline/tests/Etap7_report.md` — dodano raport testowy Etapu 7 z wynikami, ograniczeniami i rekomendacjami.
+- `DataSlate_Offline/Offline.md` — dopisano niniejszą dokumentację Etapu 7.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: moduł nie miał dedykowanego, powtarzalnego runnera testów Etapu 7 w repozytorium.
+- Stan po zmianie: `DataSlate_Offline/tests/etap7_regression.py` sprawdza walidację JSON, embedded fallback, synchronizację kopii index, statyczny HTML, składnię JS przez `node --check`, kompilację narzędzia Python, zakazane mechanizmy, strukturę generatora, dane i assety, brak zewnętrznych zależności, warianty payloadu przez Node VM i brak zmian w `DataSlate/`.
+- Powód zmiany: użytkownik wymaga maksymalnie szerokich testów automatycznych bez ręcznego przeklikiwania aplikacji.
+- Stan przed zmianą: brakowało osobnego raportu testowego dla Etapu 7.
+- Stan po zmianie: `DataSlate_Offline/tests/Etap7_report.md` dokumentuje środowisko, komendy, wyniki PASS/NOT AVAILABLE, ograniczenia headless i rekomendacje Etapu 8.
+- Powód zmiany: raport w repozytorium ułatwia powtarzalną weryfikację i audyt zakresu testów.
+
+### Testy
+
+- `git status --short` — przed zmianami repozytorium było czyste; po dodaniu Etapu 7 pokazywało nowe pliki w `DataSlate_Offline/tests/` i aktualizację `Offline.md`.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json >/tmp/dataslate-data-json-ok` — PASS, `data.json` jest poprawnym JSON-em.
+- `python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py` — PASS, narzędzie synchronizacji kompiluje się; tymczasowy `__pycache__` usunięto.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` — PASS, backup jest zsynchronizowany z index.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — PASS, test copy jest zsynchronizowany z index.
+- `rg -n -i "Firebase|Firestore|firebase-config\.js|config/firebase-config\.js|initializeApp|getFirestore|dataslate/current|currentRef\.set|onSnapshot|\bSend\b|Wyślij|Wyslij|\bPing\b|new Audio|\.play\(|audioEnabled|messageAudioId|messageAudioFile|odblok|localStorage|sessionStorage|postMessage|location\.hash|location\.search|URLSearchParams|SheetJS|xlsx" DataSlate_Offline/index.html DataSlate_Offline/index_backup.html DataSlate_Offline/index_test.html DataSlate_Offline/tools/update_embedded_data.py DataSlate_Offline/assets/data/data.json || true` — PASS z wyjaśnieniem: jedyne trafienie dotyczy komentarza `DataSlate_manifest.xlsx` w narzędziu synchronizacji, nie runtime'owego parsera XLSX.
+- `python3 DataSlate_Offline/tests/etap7_regression.py` — PASS, wszystkie checki runnera zakończyły się powodzeniem.
+- `python3 DataSlate_Offline/tests/etap7_regression.py --markdown` — PASS, wygenerowano tabelę wyników do raportu.
+- `git diff --name-only -- DataSlate` — PASS, brak zmian w chronionym folderze `DataSlate/`.
+
+### Testy niemożliwe do wykonania automatycznie
+
+- Realny test headless browser w Chromium/Playwright/Selenium — NOT AVAILABLE, ponieważ środowisko nie zawiera `chromium`, `chromium-browser`, `google-chrome`, `playwright` ani bibliotek Python `playwright`/`selenium`.
+- Realne przechwycenie popupu `window.open` w przeglądarce — NOT AVAILABLE z tego samego powodu.
+- Automatyczny test `file://` na Windows — NOT AVAILABLE, bo środowisko Codex jest kontenerem Linux, a użytkownik nie wykonuje testów ręcznych.
+- Porównanie screenshotowe/pikselowe — NOT AVAILABLE bez headless browsera.
+
+Pozostałe ryzyko jest ograniczeniem środowiskowym, nie blockerem PR: prawdziwa przeglądarka może mieć zachowania popup/renderingu niepokryte przez Node VM. Logika generowania dokumentu, fallback embedded, lokalne assety, brak zakazanych mechanizmów i warianty payloadu zostały jednak sprawdzone automatycznie.
+
+### Wyniki i wnioski
+
+- Etap 7 został zakończony w zakresie możliwym automatycznie.
+- Nie wykryto błędów wymagających poprawki w aktywnym generatorze.
+- `index.html`, `index_backup.html` i `index_test.html` są zsynchronizowane.
+- `embeddedDataSlateData` w trzech plikach index jest zgodne z `assets/data/data.json`.
+- Aktywna ścieżka offline pozostaje wolna od Firebase, Firestore, Ping, Send/Wyślij, aktywnego audio, storage, postMessage, query/hash, SheetJS i runtime'owego parsowania XLSX.
+- Domyślny język angielski i ręczny wybór polskiego pozostały zachowane.
+- Brak znanych blockerów kodowych dla przejścia do Etapu 8.
+
+### Ryzyka i następne kroki
+
+- Jeżeli przyszłe środowisko będzie miało Chromium/Playwright, warto dodać opcjonalny test E2E uruchamiający lokalny serwer, klikający Generate i przechwytujący wygenerowaną kartę.
+- Test screenshotowy/regresja wizualna powinny zostać rozważone dopiero po decyzji o dopuszczalnej infrastrukturze headless.
+- Aktualny runner `DataSlate_Offline/tests/etap7_regression.py` powinien być uruchamiany po każdej zmianie aktywnej ścieżki offline, danych albo narzędzia synchronizacji.
