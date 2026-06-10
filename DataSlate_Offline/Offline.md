@@ -1125,3 +1125,250 @@ Etap 3 powinien uwzględniać następujące decyzje:
 - Etap 3 musi zintegrować komunikat fallbacku fontów z istniejącym albo docelowym mechanizmem wyboru języka interfejsu.
 - Etap 3/4 musi przenieść `CONTENT_RECTS_BY_BACKGROUND_ID` do aktywnej ścieżki `index.html` bez modyfikowania chronionego folderu `DataSlate/` i bez rozszerzania `data.json` o layouty na tym etapie.
 - Po implementacji należy ręcznie sprawdzić działanie fontów w trybie online i offline oraz poprawne położenie tekstu na wszystkich tłach.
+
+## Aktualizacja — 2026-06-10 — Etap 3: przebudowa panelu generatora
+
+### Oryginalny pełny prompt użytkownika
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z zapisanym tam planem, decyzjami i stylem dokumentowania zmian.
+
+Zrealizuj:
+
+Etap 3 — przebudowa panelu generatora
+
+Celem Etapu 3 jest przebudowanie aktywnego panelu generatora offline w DataSlate_Offline/index.html. Ten etap ma przygotować lokalny formularz i lokalne budowanie payloadu, ale nie musi jeszcze w pełni generować gotowej karty w nowej karcie — to należy do Etapu 4.
+
+Najważniejsze decyzje obowiązujące przed Etapem 3:
+
+- Docelowym głównym plikiem modułu offline jest DataSlate_Offline/index.html.
+- index.html ma przejąć rolę generatora offline.
+- Payload jest tworzony lokalnie i istnieje tylko wewnętrznie w czasie generowania.
+- Nie używamy sessionStorage, localStorage, postMessage, query/hash ani eksportu JSON/HTML jako podstawowego mechanizmu działania.
+- Docelowa struktura modułu ma opierać się na:
+  - index.html — główna wersja generatora offline,
+  - index_backup.html — kopia/backup głównej wersji offline,
+  - index_test.html — wersja testowa generatora offline.
+- Pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html są tylko tymczasowym materiałem referencyjnym. Nie usuwaj ich jeszcze w Etapie 3, ale nie traktuj ich jako aktywnej docelowej struktury.
+- Folder DataSlate/ jest chroniony i wolno go używać wyłącznie referencyjnie. Nie modyfikuj go.
+
+Zakres Etapu 3:
+
+1. Przebuduj DataSlate_Offline/index.html z obecnego launchera w panel generatora offline.
+
+2. Panel generatora ma zawierać kontrolki potrzebne Mistrzowi Gry:
+   - wybór tła,
+   - wybór logotypu,
+   - przełącznik widoczności loga,
+   - wybór fontu,
+   - wybór fillera,
+   - ustawienia kolorów,
+   - treść wiadomości,
+   - liczba linii fillerów,
+   - reset formularza do ustawień domyślnych,
+   - czyszczenie treści wiadomości, jeżeli łatwo zachować tę funkcję lokalnie.
+
+3. Dostosuj UI do trybu offline:
+   - nazwa widoczna w interfejsie: DataSlate Offline,
+   - usuń/nie pokazuj statusu Firebase,
+   - usuń przyciski i terminologię: Wyślij, Ping, połączenie, odbiornik,
+   - usuń ślady audio z UI,
+   - usuń prostokąt cienia i efekt Flicker z UI,
+   - dodaj przycisk Generuj jako główną akcję użytkownika,
+   - nie pokazuj komunikatu typu „aplikacja nie używa Firebase” albo „nie wysyła danych do sieci”, bo wcześniejsza decyzja mówi, że użytkownik nie ma widzieć takiej informacji.
+
+4. Zaimplementuj lokalne ładowanie danych:
+   - index.html ma korzystać z DataSlate_Offline/assets/data/data.json,
+   - nie używaj runtime’owego parsowania DataSlate_manifest.xlsx,
+   - nie używaj SheetJS ani CDN SheetJS,
+   - nie wymagaj Firebase ani config/firebase-config.js,
+   - brak Firebase configu nie może generować błędu.
+
+5. Zaimplementuj lokalne budowanie payloadu:
+   - wykorzystaj logikę z obecnego GM.html jako materiał referencyjny,
+   - zachowaj możliwie zgodną strukturę payloadu z wersją online,
+   - pola audio/ping/Firebase mogą zostać pominięte albo ignorowane w aktywnej ścieżce,
+   - payload ma powstawać lokalnie w pamięci,
+   - nie zapisuj payloadu do Firestore,
+   - nie zapisuj payloadu do localStorage/sessionStorage,
+   - nie eksportuj payloadu jako JSON,
+   - nie dodawaj kopiowania payloadu,
+   - nie dodawaj eksportu gotowego HTML-a.
+
+6. Przycisk Generuj w Etapie 3:
+   - powinien co najmniej budować lokalny payload bez błędów,
+   - nie musi jeszcze otwierać finalnej nowej karty z wyrenderowanym DataSlate, jeśli to wymagałoby realizacji Etapu 4,
+   - jeżeli implementujesz tymczasową reakcję na kliknięcie, niech będzie bezpieczna i lokalna, np. aktualizacja statusu „Payload gotowy” / „Payload ready” albo zapis do zmiennej w pamięci,
+   - nie implementuj jeszcze pełnej funkcji openOfflineSlate(payload), buildOfflineSlateHTML(payload) ani document.write(...), chyba że uznasz to za absolutnie konieczne i wyraźnie opiszesz w Offline.md, że zahaczyłeś o Etap 4.
+
+7. Obsługa fontów:
+   - menu wyboru fontu zostaje,
+   - nazwy fontów z data.json zostają zgodne z wersją online,
+   - Google Fonts mogą być użyte, jeżeli aplikacja działa online i fonty są dostępne,
+   - brak internetu albo nieudane załadowanie Google Fonts nie może blokować działania generatora,
+   - przy niedostępności Google Fonts generator ma używać fontu systemowego,
+   - w panelu generatora, najlepiej przy wyborze fontu, pokaż komunikat tylko wtedy, gdy Google Fonts faktycznie nie są dostępne albo nie udało się ich załadować,
+   - komunikat musi być przygotowany w obsługiwanych językach interfejsu, co najmniej PL i EN.
+
+Przykładowe komunikaty:
+
+PL:
+Google Fonts są niedostępne. Generator użyje fontu systemowego.
+
+EN:
+Google Fonts are unavailable. The generator will use a system font.
+
+8. Obsługa języka:
+   - jeżeli obecny moduł ma mechanizm wyboru języka, zachowaj go albo odtwórz w index.html,
+   - komunikat o fallbacku fontów musi korzystać z tego mechanizmu,
+   - nie wpisuj komunikatu wyłącznie na sztywno po polsku ani wyłącznie po angielsku.
+
+9. Layouty zależne od tła:
+   - nie rozszerzaj w Etapie 3 pliku assets/data/data.json o layouty zależne od tła,
+   - przenieś albo przygotuj do przeniesienia mapę CONTENT_RECTS_BY_BACKGROUND_ID z DataSlate_Offline/DataSlate.html do docelowej aktywnej ścieżki index.html,
+   - mapa layoutów jest technicznym elementem renderera potrzebnym do zachowania pozycji tekstu na różnych tłach,
+   - jeżeli pełne użycie tej mapy należy dopiero do Etapu 4/5, zachowaj ją w kodzie index.html jako przygotowanie i opisz to w Offline.md.
+
+10. Pliki backup/test:
+   - utwórz index_backup.html i index_test.html tylko wtedy, jeżeli bezpiecznie da się je zsynchronizować z index.html w ramach Etapu 3,
+   - jeżeli uznasz, że tworzenie index_backup.html i index_test.html powinno nastąpić po stabilizacji index.html, opisz to w Offline.md jako następny krok,
+   - nie usuwaj jeszcze GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html ani DataSlate_test.html.
+
+11. Nie wykonuj w Etapie 3:
+   - pełnego renderowania gotowego DataSlate w nowej karcie, jeżeli wymaga to Etapu 4,
+   - przebudowy renderera finalnego ekranu, jeżeli należy to do Etapu 5,
+   - usuwania starych plików GM/DataSlate,
+   - modyfikacji folderu DataSlate/,
+   - zmian w DataSlate_manifest.xlsx,
+   - automatycznych testów wizualnych,
+   - eksportu/importu payloadu,
+   - mechanizmu localStorage/sessionStorage/postMessage/query/hash.
+
+Po zmianach zaktualizuj DataSlate_Offline/Offline.md.
+
+Dopisz nową sekcję dokumentującą wykonanie Etapu 3. Sekcja powinna zawierać:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- opis zmian w index.html,
+- opis lokalnego ładowania data.json,
+- opis lokalnego budowania payloadu,
+- opis usunięcia/wyłączenia Firebase, Firestore, Ping, Wyślij i audio z aktywnego UI,
+- opis obsługi fontów i fallbacku systemowego,
+- opis obsługi komunikatu wielojęzycznego,
+- informację, czy CONTENT_RECTS_BY_BACKGROUND_ID został przeniesiony do index.html albo przygotowany do dalszego etapu,
+- informację, czy utworzono index_backup.html i index_test.html,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+W testach/sprawdzeniach wykonaj przynajmniej:
+- sprawdzenie statusu repozytorium przed i po zmianach,
+- walidację składni/struktury HTML na tyle, na ile jest to możliwe statycznie,
+- sprawdzenie, że index.html nie importuje Firebase ani config/firebase-config.js,
+- sprawdzenie, że index.html nie zawiera Firestore, onSnapshot, currentRef.set ani dataslate/current,
+- sprawdzenie, że index.html nie zawiera przycisków Ping/Wyślij ani widocznych śladów audio w UI,
+- sprawdzenie, że index.html ładuje assets/data/data.json,
+- sprawdzenie, że data.json nadal jest poprawnym JSON-em,
+- sprawdzenie, że nie zmodyfikowano folderu DataSlate/,
+- jeżeli możliwe, prosty test lokalny w przeglądarce albo statyczny test potwierdzający, że formularz i funkcje JS nie mają oczywistych błędów składniowych.
+
+### Zakres prac
+
+- Przeczytano aktualny `DataSlate_Offline/Offline.md` przed zmianami i wykonano Etap 3 zgodnie z zapisanym planem oraz najnowszymi decyzjami użytkownika.
+- Przebudowano aktywny `DataSlate_Offline/index.html` z launchera odsyłającego do `GM.html` i `DataSlate.html` w samodzielny panel generatora offline.
+- Przygotowano lokalne ładowanie manifestu z `assets/data/data.json` oraz lokalne budowanie payloadu w pamięci po kliknięciu `Generuj`.
+- Nie wdrożono pełnego otwierania nowej karty, `openOfflineSlate(payload)`, `buildOfflineSlateHTML(payload)` ani `document.write(...)`; zakres ten pozostaje dla Etapu 4.
+- Nie modyfikowano folderu `DataSlate/`, pliku `DataSlate_manifest.xlsx` ani tymczasowych plików referencyjnych `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html`, `DataSlate_test.html`.
+
+### Ustalenia i decyzje
+
+- `index.html` jest od tego etapu aktywnym panelem generatora offline, a dawne pliki GM/DataSlate pozostają wyłącznie materiałem referencyjnym do kolejnych etapów.
+- Payload jest budowany wyłącznie lokalnie w zmiennej `lastPayload` oraz pokazywany w roboczym podsumowaniu na ekranie; nie jest zapisywany do Firestore, `localStorage`, `sessionStorage`, query/hash, `postMessage` ani eksportowany do pliku.
+- Tymczasowa reakcja przycisku `Generuj` to zbudowanie payloadu, zapis w pamięci i status `Payload gotowy` / `Payload ready`; finalna karta w nowej karcie pozostaje zakresem Etapu 4.
+- Pola i mechanizmy Firebase, Firestore, Ping, Wyślij oraz audio zostały pominięte w aktywnym UI i aktywnej ścieżce payloadu.
+- Opcje prostokąta cienia i Flicker nie są pokazywane w UI; dla zgodności z późniejszą strukturą payloadu pola `movingOverlay` i `flicker` są ustawiane lokalnie na `false`.
+
+### Opis zmian w `index.html`
+
+- Zastąpiono launcher z linkami do `GM.html`, `DataSlate.html` i widoków testowych pełnym formularzem `DataSlate Offline`.
+- Dodano kontrolki: wybór tła, wybór logotypu, przełącznik widoczności loga, wybór fontu, wybór fillera, przełącznik fillerów, liczba linii fillerów, wysokość strefy fillerów, kolory wiadomości/fillerów/loga, rozmiary tekstu, treść wiadomości, `Generuj`, czyszczenie treści, reset formularza i losowanie fillerów.
+- Dodano roboczy podgląd, który korzysta z wybranych lokalnych assetów, kolorów, fontu, treści i wylosowanych prefixów/suffixów. Podgląd nie jest jeszcze finalnym rendererem Etapu 4/5.
+- Dodano lokalny mechanizm języka PL/EN dla etykiet formularza, statusów i komunikatu fallbacku fontów.
+
+### Opis lokalnego ładowania `data.json`
+
+- `index.html` ładuje dane przez `fetch('assets/data/data.json', { cache: 'no-store' })`.
+- Dane z JSON-a wypełniają listy `backgrounds`, `logos`, `fonts` i `fillers`.
+- Nie użyto runtime’owego parsowania `DataSlate_manifest.xlsx`.
+- Nie użyto SheetJS ani żadnego CDN.
+- Struktury `assets/data/data.json` nie zmieniano.
+
+### Opis lokalnego budowania payloadu
+
+- Funkcja `buildPayload()` zbiera bieżący stan formularza i tworzy lokalny obiekt o strukturze możliwie zbliżonej do payloadu z `GM.html`.
+- Payload zawiera m.in. `type`, `text`, `backgroundId`, `backgroundFile`, `logoId`, `logoFile`, `fillerId`, `fillerSet`, `fontId`, `fontPreset`, `fillersEnabled`, `showLogo`, `prefixLines`, `suffixLines`, `fillerLineCount`, `fillerBandLines`, kolory, rozmiary fontów, `contentRect`, `nonce` i `createdAt`.
+- Payload powstaje po kliknięciu `Generuj`, trafia do zmiennej `lastPayload` i do roboczego podsumowania w panelu.
+- Payload nie jest wysyłany, utrwalany ani eksportowany.
+
+### Opis usunięcia/wyłączenia Firebase, Firestore, Ping, Wyślij i audio z aktywnego UI
+
+- `index.html` nie importuje `config/firebase-config.js`, Firebase App, Firestore ani żadnych skryptów zewnętrznych.
+- `index.html` nie używa `currentRef.set(...)`, `onSnapshot(...)`, dokumentu `dataslate/current` ani statusów połączenia.
+- Aktywny UI nie zawiera przycisków `Wyślij` ani `Ping`.
+- Aktywny UI nie zawiera ustawień ani komunikatów audio.
+- Brak konfiguracji Firebase nie generuje błędu w aktywnym `index.html`, ponieważ plik nie odwołuje się do Firebase.
+
+### Opis obsługi fontów i fallbacku systemowego
+
+- Menu wyboru fontu pozostało i korzysta z nazw fontów z `assets/data/data.json`.
+- `index.html` nie importuje Google Fonts jako zależności wymaganej do działania offline.
+- Podgląd i przyszły payload ustawiają wybrany font z fallbackiem `Calibri, Arial, sans-serif`.
+- Generator sprawdza dostępność wybranego fontu przez `document.fonts.check(...)`; jeśli font nie jest dostępny w środowisku przeglądarki, pokazuje komunikat fallbacku i nadal działa z fontem systemowym.
+
+### Opis obsługi komunikatu wielojęzycznego
+
+- Dodano przełącznik języka `Polski` / `English`.
+- Komunikat fallbacku fontów korzysta z tego samego mechanizmu tłumaczeń co etykiety UI.
+- Treść PL: `Google Fonts są niedostępne. Generator użyje fontu systemowego.`
+- Treść EN: `Google Fonts are unavailable. The generator will use a system font.`
+
+### `CONTENT_RECTS_BY_BACKGROUND_ID`
+
+- Mapa `CONTENT_RECTS_BY_BACKGROUND_ID` została przeniesiona z `DataSlate_Offline/DataSlate.html` do aktywnego `index.html` jako przygotowanie do kolejnych etapów.
+- W Etapie 3 mapa jest już wykorzystywana pomocniczo do pozycjonowania roboczego podglądu i zapisywana w lokalnym payloadzie jako `contentRect`.
+- Pełne użycie tej mapy w finalnym rendererze nowej karty pozostaje zakresem Etapu 4/5.
+
+### Pliki backup/test
+
+- Utworzono `DataSlate_Offline/index_backup.html` jako zsynchronizowaną kopię `index.html` po Etapie 3.
+- Utworzono `DataSlate_Offline/index_test.html` jako zsynchronizowaną kopię `index.html` po Etapie 3.
+- Nie usuwano ani nie modyfikowano starych plików `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html`, `DataSlate_test.html`.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — przebudowa launchera w aktywny panel generatora offline, lokalne ładowanie `data.json`, lokalne budowanie payloadu, roboczy podgląd, PL/EN, fallback fontów, przygotowana mapa layoutów.
+- `DataSlate_Offline/index_backup.html` — nowy backup zsynchronizowany z `index.html` po Etapie 3.
+- `DataSlate_Offline/index_test.html` — nowa wersja testowa zsynchronizowana z `index.html` po Etapie 3.
+- `DataSlate_Offline/Offline.md` — niniejsza sekcja dokumentująca Etap 3, prompt użytkownika, decyzje, zmiany, testy i następne kroki.
+
+### Testy/sprawdzenia
+
+- `git status --short` przed zmianami — sprawdzono stan repozytorium; brak wcześniejszych zmian roboczych.
+- `python3 - <<'PY' ... HTMLParser ... PY` — statyczny parser HTML przetworzył `index.html`, `index_backup.html` i `index_test.html` bez błędu strukturalnego.
+- `node --check /tmp/index-script.js` — wyodrębniony skrypt z `index.html` nie ma oczywistych błędów składni JavaScript.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json >/tmp/data-json-ok` — `data.json` pozostaje poprawnym JSON-em.
+- `rg -n "firebase|config/firebase-config|Firestore|onSnapshot|currentRef\.set|dataslate/current|SheetJS|xlsx|cdn" DataSlate_Offline/index.html || true` — aktywny `index.html` nie zawiera importów ani odwołań do Firebase/Firestore/SheetJS/CDN.
+- `rg -n "Ping|Wyślij|audio|Audio|Dźwięk|dźwięk|sound|Sound" DataSlate_Offline/index.html || true` — aktywny `index.html` nie zawiera przycisków Ping/Wyślij ani widocznych śladów audio w UI.
+- `rg -n "assets/data/data\.json" DataSlate_Offline/index.html` — potwierdzono lokalne ładowanie `assets/data/data.json`.
+- `rg -n "localStorage|sessionStorage|postMessage|location\.hash|location\.search|URLSearchParams|document\.write|openOfflineSlate|buildOfflineSlateHTML" DataSlate_Offline/index.html` — potwierdzono brak zakazanych mechanizmów transportu payloadu i brak wejścia w Etap 4.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` oraz `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — potwierdzono synchronizację kopii backup/test z głównym `index.html`.
+- `git diff --name-only -- DataSlate` — brak zmian w chronionym folderze `DataSlate/`.
+- `git status --short` po zmianach — potwierdzono zmiany tylko w zakresie Etapu 3 i dokumentacji.
+
+### Ryzyka i następne kroki
+
+- Etap 4 powinien dodać finalne `openOfflineSlate(payload)`, `buildOfflineSlateHTML(payload)` i generowanie kompletnej karty w nowej karcie.
+- Etap 5 powinien przenieść lub zaadaptować właściwy renderer finalnego ekranu DataSlate, tak aby nowa karta wiernie odtwarzała wygląd wersji online.
+- Należy wykonać ręczny test w przeglądarce po uruchomieniu przez lokalny serwer statyczny, ponieważ `fetch('assets/data/data.json')` może być blokowany przy bezpośrednim otwarciu pliku z dysku w części przeglądarek.
+- W kolejnych etapach trzeba zdecydować, czy robocze podsumowanie payloadu widoczne w panelu pozostaje jako narzędzie deweloperskie, czy zostanie ukryte przed użytkownikiem końcowym.
+- Po stabilizacji aktywnej ścieżki trzeba zdecydować, kiedy usunąć lub zarchiwizować tymczasowe pliki GM/DataSlate.
