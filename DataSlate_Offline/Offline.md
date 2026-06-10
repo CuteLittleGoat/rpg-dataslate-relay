@@ -680,3 +680,351 @@ Etap 0 — inwentaryzacja i zabezpieczenie zakresu
 - Przed wdrażaniem właściwego generatora należy zdecydować, czy `index.html` przejmie rolę jedynego głównego generatora, czy utrzymany zostanie podział wieloplikowy z lokalnym przekazaniem payloadu.
 - Następny rekomendowany krok to Etap 1: wybór i opis docelowej struktury aplikacji, a następnie rozpoczęcie minimalnych zmian w aktywnej ścieżce tylko w `DataSlate_Offline/`.
 - Przy kolejnych etapach trzeba pamiętać, że folder `DataSlate/` pozostaje nietykalny, a wszelkie porównania z wersją online mogą mieć wyłącznie charakter odczytowy.
+
+## Aktualizacja — 2026-06-10 — formalne zamknięcie Etapu 1: decyzja o strukturze aplikacji
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z dotychczasowym stylem dokumentowania zmian w tym pliku.
+
+Zadanie składa się z dwóch części:
+
+1. Zaktualizuj DataSlate_Offline/Offline.md o moje decyzje zamykające „Etap 1 — decyzja o strukturze aplikacji”.
+2. Następnie zrealizuj „Etap 2 — przygotowanie lokalnych danych i assetów” zgodnie z planem zapisanym w Offline.md.
+
+Moje decyzje dotyczące „Etap 1 — decyzja o strukturze aplikacji”:
+
+Wybieramy wariant jednego głównego pliku DataSlate_Offline/index.html.
+
+index.html ma przejąć rolę generatora offline, z formularzem i funkcją tworzącą nową kartę. Payload jest tworzony lokalnie i istnieje tylko wewnętrznie w czasie generowania. Nie używamy sessionStorage, localStorage, postMessage, query/hash ani eksportu JSON/HTML jako podstawowego mechanizmu.
+
+Ponieważ docelowym wariantem jest jeden główny index.html, pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html są zbędne w finalnej strukturze modułu offline.
+
+Docelowa struktura powinna opierać się na:
+- index.html — główna wersja generatora offline,
+- index_backup.html — kopia/backup głównej wersji offline,
+- index_test.html — wersja testowa generatora offline.
+
+Pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html mogą pozostać tymczasowo jako materiał referencyjny w trakcie migracji, ale po zakończeniu przebudowy powinny zostać usunięte albo wyłączone z aktywnej/docelowej struktury DataSlate_Offline.
+
+Zapisz powyższe decyzje w DataSlate_Offline/Offline.md jako formalne zamknięcie Etapu 1. W sekcji tej uwzględnij:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+Następnie zrealizuj „Etap 2 — przygotowanie lokalnych danych i assetów”.
+
+Zakres Etapu 2:
+
+1. Zweryfikuj strukturę DataSlate_Offline/assets/data/data.json jako podstawowego źródła danych dla generatora offline.
+2. Sprawdź, czy JSON zawiera komplet wymaganych list i mapowań:
+   - tła,
+   - logotypy,
+   - fonty,
+   - fillery,
+   - ścieżki assetów,
+   - ustawienia ramek i layoutu zależne od tła,
+   - dane potrzebne do prefixów i suffixów.
+3. Sprawdź, czy wszystkie ścieżki w data.json prowadzą do lokalnych plików w DataSlate_Offline/.
+4. Sprawdź rolę DataSlate_Offline/assets/data/DataSlate_manifest.xlsx jako pliku źródłowego/deweloperskiego. Plik ma pozostać w repozytorium.
+5. Ustal minimalny zestaw danych testowych pozwalający sprawdzić każdy typ tła, logotypu, fontu i fillera.
+6. Sprawdź, czy w DataSlate_Offline/ znajdują się assety wymagane przez data.json:
+   - backgrounds,
+   - logos,
+   - fonts albo lokalnie dostępne fonty, jeśli takie są,
+   - fillery jako dane w JSON,
+   - ramki/layouty/mapowania, jeżeli są wymagane przez renderer.
+7. Sprawdź, czy data.json nie odwołuje się do plików spoza DataSlate_Offline/ ani do zewnętrznych URL.
+8. Sprawdź, czy istnieją potencjalne braki, niespójności nazw, literówki w ścieżkach, puste listy, nieużywane sekcje albo zależności, które utrudnią Etap 3 i Etap 4.
+
+Ważne ograniczenia:
+
+- Nie modyfikuj folderu DataSlate/. Folder DataSlate/ jest tylko referencyjny.
+- Nie przebudowuj jeszcze generatora offline ani UI index.html w ramach tego zadania, chyba że zmiana jest absolutnie konieczna dla przygotowania danych i assetów.
+- Nie usuwaj jeszcze plików GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html. Na tym etapie tylko zapisz decyzję, że są zbędne w finalnej strukturze i że docelowo zastąpią je index_backup.html oraz index_test.html.
+- Nie usuwaj DataSlate_manifest.xlsx.
+- Nie dodawaj sessionStorage, localStorage, postMessage, query/hash ani eksportu JSON/HTML jako mechanizmu działania.
+- Nie dodawaj automatycznych testów wizualnych.
+- Jeżeli Etap 2 ujawni konieczność zmian w kodzie aplikacji, których bezpiecznie nie da się wykonać bez rozpoczęcia Etapu 3 lub Etapu 4, opisz je jako rekomendację/bloker w Offline.md, ale nie wykonuj przedwczesnej przebudowy generatora.
+
+Po wykonaniu Etapu 2 dopisz do DataSlate_Offline/Offline.md nową sekcję dokumentującą wynik Etapu 2. Sekcja powinna zawierać:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- wynik weryfikacji data.json,
+- wynik weryfikacji ścieżek assetów,
+- informację o DataSlate_manifest.xlsx,
+- minimalny zestaw danych testowych,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+W testach/sprawdzeniach użyj statycznej weryfikacji repozytorium, np.:
+- sprawdzenie statusu repozytorium przed i po zmianach,
+- odczyt i walidacja JSON,
+- sprawdzenie kluczy i liczebności list w data.json,
+- sprawdzenie ścieżek plików z data.json,
+- wyszukanie zewnętrznych URL w data.json,
+- sprawdzenie obecności lokalnych assetów, do których odwołuje się data.json.
+
+Na końcu przygotuj krótkie podsumowanie:
+- czy Etap 1 został formalnie zamknięty,
+- czy Etap 2 został zakończony,
+- czy można przejść do Etapu 3,
+- jakie są ewentualne blokery lub ryzyka przed Etapem 3.
+
+Utwórz PR z tymi zmianami.
+
+### Zakres prac
+
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed dopisaniem nowych ustaleń.
+- Sprawdzono status repozytorium przed zmianami dokumentacji.
+- Dopisano formalne zamknięcie Etapu 1 zgodnie z decyzjami użytkownika.
+- Nie przebudowywano `index.html`, nie dodawano mechanizmu przekazywania payloadu i nie usuwano plików referencyjnych `GM*.html` ani `DataSlate*.html`.
+- Nie modyfikowano chronionego folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- Etap 1 zostaje formalnie zamknięty decyzją o jednym głównym pliku `DataSlate_Offline/index.html`.
+- `index.html` ma przejąć rolę generatora offline: formularz, lokalne zbudowanie payloadu i utworzenie nowej karty z gotowym ekranem DataSlate.
+- Payload ma istnieć tylko wewnętrznie w czasie generowania i nie może opierać podstawowego działania o `sessionStorage`, `localStorage`, `postMessage`, query/hash ani eksport JSON/HTML.
+- Docelowa struktura aktywna modułu offline ma opierać się na plikach:
+  - `index.html` — główna wersja generatora offline,
+  - `index_backup.html` — kopia/backup głównej wersji offline,
+  - `index_test.html` — wersja testowa generatora offline.
+- Pliki `GM.html`, `DataSlate.html`, `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html` i `DataSlate_test.html` są zbędne w finalnej strukturze aktywnej, ale na tym etapie pozostają tymczasowo jako materiał referencyjny do migracji.
+- Decyzja z tej sekcji aktualizuje wcześniejsze ustalenie, że pliki backup/test miałyby docelowo zawierać ten sam kod co wersja offline: aktualny wariant docelowy wskazuje odpowiednio `index_backup.html` i `index_test.html` zamiast par `GM_*`/`DataSlate_*`.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano formalne zamknięcie Etapu 1 i decyzję o docelowej strukturze opartej o `index.html`, `index_backup.html` oraz `index_test.html`.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: `Offline.md` zawierał plan Etapu 1 oraz wcześniejsze odpowiedzi biznesowe, ale nie zawierał formalnego zamknięcia decyzji strukturalnej.
+- Stan po zmianie: dokument wskazuje jeden aktywny plik główny `index.html` jako wariant docelowy oraz oznacza pary `GM*.html`/`DataSlate*.html` jako tymczasowy materiał referencyjny do usunięcia albo wyłączenia po migracji.
+- Powód zmiany: użytkownik podjął decyzję kończącą Etap 1 i poprosił o jej zapisanie przed rozpoczęciem Etapu 2.
+
+### Testy/sprawdzenia
+
+- Sprawdzono status repozytorium przed zmianami: drzewo robocze było czyste na gałęzi `work`.
+- Przeczytano aktualny plik `DataSlate_Offline/Offline.md` przed dopisaniem sekcji.
+- Sprawdzono listę plików `AGENTS.md`, `Offline.md`, `data.json` i manifestów XLSX poleceniem `rg --files`, bez modyfikowania folderu `DataSlate/`.
+- Nie wykonywano testów funkcjonalnych aplikacji, ponieważ zamknięcie Etapu 1 jest zmianą dokumentacyjną i nie uruchamia jeszcze docelowego generatora.
+
+### Ryzyka i następne kroki
+
+- Etap 3 będzie musiał przenieść użyteczną logikę formularza i renderera do `index.html` bez wprowadzania niedozwolonych mechanizmów transportu payloadu.
+- Po zakończeniu przebudowy trzeba utworzyć albo zsynchronizować `index_backup.html` i `index_test.html`, a pliki `GM*.html` oraz `DataSlate*.html` usunąć albo wyłączyć z aktywnej/docelowej struktury.
+- Do czasu migracji istnieje ryzyko utrzymaniowe: folder zawiera nadal stare pliki online oparte o Firebase, CDN i Google Fonts, ale nie zostały one usunięte zgodnie z ograniczeniem tego zadania.
+
+## Aktualizacja — 2026-06-10 — Etap 2: przygotowanie lokalnych danych i assetów
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z dotychczasowym stylem dokumentowania zmian w tym pliku.
+
+Zadanie składa się z dwóch części:
+
+1. Zaktualizuj DataSlate_Offline/Offline.md o moje decyzje zamykające „Etap 1 — decyzja o strukturze aplikacji”.
+2. Następnie zrealizuj „Etap 2 — przygotowanie lokalnych danych i assetów” zgodnie z planem zapisanym w Offline.md.
+
+Moje decyzje dotyczące „Etap 1 — decyzja o strukturze aplikacji”:
+
+Wybieramy wariant jednego głównego pliku DataSlate_Offline/index.html.
+
+index.html ma przejąć rolę generatora offline, z formularzem i funkcją tworzącą nową kartę. Payload jest tworzony lokalnie i istnieje tylko wewnętrznie w czasie generowania. Nie używamy sessionStorage, localStorage, postMessage, query/hash ani eksportu JSON/HTML jako podstawowego mechanizmu.
+
+Ponieważ docelowym wariantem jest jeden główny index.html, pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html są zbędne w finalnej strukturze modułu offline.
+
+Docelowa struktura powinna opierać się na:
+- index.html — główna wersja generatora offline,
+- index_backup.html — kopia/backup głównej wersji offline,
+- index_test.html — wersja testowa generatora offline.
+
+Pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html mogą pozostać tymczasowo jako materiał referencyjny w trakcie migracji, ale po zakończeniu przebudowy powinny zostać usunięte albo wyłączone z aktywnej/docelowej struktury DataSlate_Offline.
+
+Zapisz powyższe decyzje w DataSlate_Offline/Offline.md jako formalne zamknięcie Etapu 1. W sekcji tej uwzględnij:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+Następnie zrealizuj „Etap 2 — przygotowanie lokalnych danych i assetów”.
+
+Zakres Etapu 2:
+
+1. Zweryfikuj strukturę DataSlate_Offline/assets/data/data.json jako podstawowego źródła danych dla generatora offline.
+2. Sprawdź, czy JSON zawiera komplet wymaganych list i mapowań:
+   - tła,
+   - logotypy,
+   - fonty,
+   - fillery,
+   - ścieżki assetów,
+   - ustawienia ramek i layoutu zależne od tła,
+   - dane potrzebne do prefixów i suffixów.
+3. Sprawdź, czy wszystkie ścieżki w data.json prowadzą do lokalnych plików w DataSlate_Offline/.
+4. Sprawdź rolę DataSlate_Offline/assets/data/DataSlate_manifest.xlsx jako pliku źródłowego/deweloperskiego. Plik ma pozostać w repozytorium.
+5. Ustal minimalny zestaw danych testowych pozwalający sprawdzić każdy typ tła, logotypu, fontu i fillera.
+6. Sprawdź, czy w DataSlate_Offline/ znajdują się assety wymagane przez data.json:
+   - backgrounds,
+   - logos,
+   - fonts albo lokalnie dostępne fonty, jeśli takie są,
+   - fillery jako dane w JSON,
+   - ramki/layouty/mapowania, jeżeli są wymagane przez renderer.
+7. Sprawdź, czy data.json nie odwołuje się do plików spoza DataSlate_Offline/ ani do zewnętrznych URL.
+8. Sprawdź, czy istnieją potencjalne braki, niespójności nazw, literówki w ścieżkach, puste listy, nieużywane sekcje albo zależności, które utrudnią Etap 3 i Etap 4.
+
+Ważne ograniczenia:
+
+- Nie modyfikuj folderu DataSlate/. Folder DataSlate/ jest tylko referencyjny.
+- Nie przebudowuj jeszcze generatora offline ani UI index.html w ramach tego zadania, chyba że zmiana jest absolutnie konieczna dla przygotowania danych i assetów.
+- Nie usuwaj jeszcze plików GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html. Na tym etapie tylko zapisz decyzję, że są zbędne w finalnej strukturze i że docelowo zastąpią je index_backup.html oraz index_test.html.
+- Nie usuwaj DataSlate_manifest.xlsx.
+- Nie dodawaj sessionStorage, localStorage, postMessage, query/hash ani eksportu JSON/HTML jako mechanizmu działania.
+- Nie dodawaj automatycznych testów wizualnych.
+- Jeżeli Etap 2 ujawni konieczność zmian w kodzie aplikacji, których bezpiecznie nie da się wykonać bez rozpoczęcia Etapu 3 lub Etapu 4, opisz je jako rekomendację/bloker w Offline.md, ale nie wykonuj przedwczesnej przebudowy generatora.
+
+Po wykonaniu Etapu 2 dopisz do DataSlate_Offline/Offline.md nową sekcję dokumentującą wynik Etapu 2. Sekcja powinna zawierać:
+- pełny prompt użytkownika,
+- zakres prac,
+- ustalenia i decyzje,
+- wynik weryfikacji data.json,
+- wynik weryfikacji ścieżek assetów,
+- informację o DataSlate_manifest.xlsx,
+- minimalny zestaw danych testowych,
+- zmienione pliki,
+- testy/sprawdzenia,
+- ryzyka i następne kroki.
+
+W testach/sprawdzeniach użyj statycznej weryfikacji repozytorium, np.:
+- sprawdzenie statusu repozytorium przed i po zmianach,
+- odczyt i walidacja JSON,
+- sprawdzenie kluczy i liczebności list w data.json,
+- sprawdzenie ścieżek plików z data.json,
+- wyszukanie zewnętrznych URL w data.json,
+- sprawdzenie obecności lokalnych assetów, do których odwołuje się data.json.
+
+Na końcu przygotuj krótkie podsumowanie:
+- czy Etap 1 został formalnie zamknięty,
+- czy Etap 2 został zakończony,
+- czy można przejść do Etapu 3,
+- jakie są ewentualne blokery lub ryzyka przed Etapem 3.
+
+Utwórz PR z tymi zmianami.
+
+### Zakres prac
+
+- Przeczytano aktualny `DataSlate_Offline/Offline.md` i wykonano Etap 2 jako statyczną weryfikację danych oraz assetów.
+- Zweryfikowano `DataSlate_Offline/assets/data/data.json` jako obecne podstawowe źródło danych dla generatora offline.
+- Sprawdzono klucze, typy i liczebność list w JSON-ie.
+- Sprawdzono ścieżki plików deklarowane w `backgrounds`, `logos` i `audios`.
+- Sprawdzono obecność lokalnych katalogów assetów i plików ramek w `assets/ramki/` odpowiadających tłom.
+- Sprawdzono brak zewnętrznych URL w `data.json`.
+- Sprawdzono obecność `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx` i pozostawiono go bez zmian jako plik źródłowy/deweloperski.
+- Nie przebudowywano generatora, nie zmieniano UI `index.html`, nie dodawano mechanizmu transportu payloadu, nie usuwano starych plików HTML i nie dodawano automatycznych testów wizualnych.
+- Nie modyfikowano chronionego folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- `assets/data/data.json` może pozostać podstawowym źródłem danych dla Etapu 3 i Etapu 4, ale wymaga świadomego uzupełnienia albo przeniesienia niektórych mapowań z kodu przy przebudowie renderera.
+- JSON zawiera komplet podstawowych list dla formularza: tła, logotypy, fonty, fillery oraz audio zachowane dla zgodności z manifestem.
+- JSON zawiera ścieżki assetów dla teł, logotypów i audio; wszystkie sprawdzone ścieżki są lokalne i istnieją w `DataSlate_Offline/`.
+- JSON nie zawiera obecnie jawnych ustawień ramek i layoutu zależnych od tła. Te ustawienia istnieją w aktywnym rendererze jako stała `CONTENT_RECTS_BY_BACKGROUND_ID` w plikach `DataSlate*.html`, więc Etap 3/4 musi zdecydować, czy przenieść je do `index.html`, czy rozszerzyć `data.json`.
+- Pliki ramek `assets/ramki/*_ramka.png` istnieją lokalnie dla każdego tła, ale nie są jawnie wskazane w `data.json`; ich powiązanie jest inferowane po nazwach plików.
+- Lokalnego katalogu `assets/fonts/` nie ma. Lista `fonts` zawiera nazwy rodzin fontów, nie ścieżki do lokalnych plików fontów. To jest najważniejsze ryzyko dla wymogu pełnego działania offline bez Google Fonts.
+- Fillery są przechowywane jako dane w JSON-ie, a każdy sprawdzony wpis ma listę `prefixes` i `suffixes`.
+- `importLog` jest pustą listą; nie blokuje Etapu 3, ale jest sekcją pomocniczą generowaną z manifestu i prawdopodobnie nie będzie potrzebna w aktywnym runtime generatora.
+- `DataSlate_manifest.xlsx` pozostaje w repozytorium jako plik źródłowy/deweloperski. Aplikacja offline nie powinna opierać podstawowego runtime na parsowaniu XLSX.
+
+### Wynik weryfikacji `data.json`
+
+- Plik `DataSlate_Offline/assets/data/data.json` jest poprawnym JSON-em.
+- Klucze najwyższego poziomu: `backgrounds`, `logos`, `audios`, `fonts`, `fillers`, `importLog`.
+- Liczebność list:
+  - `backgrounds`: 10,
+  - `logos`: 14,
+  - `audios`: 1,
+  - `fonts`: 16,
+  - `fillers`: 14,
+  - `importLog`: 0.
+- Identyfikatory i nazwy w listach `backgrounds`, `logos`, `audios`, `fonts` i `fillers` są unikalne według statycznego sprawdzenia.
+- Nie wykryto pustych list wymaganych do formularza i renderera: tła, logotypy, fonty oraz fillery są niepuste.
+- Nie wykryto fillerów bez prefixów albo bez suffixów.
+- Dane potrzebne do prefixów i suffixów są obecne w każdym wpisie `fillers`.
+- Brak jawnych pól layoutu/ramki w `backgrounds` oznacza, że mapowanie obszaru treści musi zostać przeniesione z obecnego kodu renderera albo dodane do danych w jednym z następnych etapów.
+
+### Wynik weryfikacji ścieżek assetów
+
+- Sprawdzono 25 ścieżek plików z sekcji `backgrounds`, `logos` i `audios`.
+- Wszystkie 25 ścieżek jest ścieżkami względnymi do zasobów lokalnych w `DataSlate_Offline/`.
+- Nie wykryto ścieżek wychodzących poza `DataSlate_Offline/`.
+- Nie wykryto brakujących plików dla ścieżek zadeklarowanych w `data.json`.
+- Nie wykryto zewnętrznych URL w `data.json`.
+- Katalogi lokalnych assetów istnieją:
+  - `DataSlate_Offline/assets/backgrounds`,
+  - `DataSlate_Offline/assets/logos`,
+  - `DataSlate_Offline/assets/audios`,
+  - `DataSlate_Offline/assets/audios/ping`,
+  - `DataSlate_Offline/assets/ramki`,
+  - `DataSlate_Offline/assets/data`.
+- Dla każdego tła znaleziono odpowiadający plik ramki w `assets/ramki/` przy założeniu konwencji nazwy `<nazwa_tła>_ramka.png`.
+- Lokalny katalog `DataSlate_Offline/assets/fonts/` nie istnieje, więc fonty nie są obecnie dostarczone jako lokalne pliki fontów. W obecnych plikach HTML fonty są ładowane z Google Fonts, co musi zostać rozwiązane w Etapie 3/4, jeżeli pełny tryb offline ma zachować wybrane fonty.
+
+### Informacja o `DataSlate_manifest.xlsx`
+
+- `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx` istnieje i nie został zmieniony.
+- Rola pliku pozostaje źródłowa/deweloperska: aktualizacje danych mają wynikać z aktualizacji manifestu, wygenerowania nowego `assets/data/data.json` i aktualizacji odpowiednich folderów assetów.
+- Etap 2 nie usuwa manifestu i nie wprowadza runtime’owego parsowania XLSX jako podstawowego mechanizmu działania aplikacji offline.
+
+### Minimalny zestaw danych testowych
+
+Minimalny zestaw testowy przed Etapem 3/4 powinien zapewnić pokrycie każdej pozycji z głównych list, ponieważ listy są krótkie i każda pozycja odpowiada odrębnemu assetowi albo stylowi:
+
+- Tła: po jednym teście dla każdego z 10 wpisów `backgrounds`, aby sprawdzić obraz tła oraz odpowiadającą mu ramkę/layout: `Green with a narrow frame`, `Gray-blue frame`, `Silver with Aquilla`, `Retro with a thick frame`, `Silver with a narrow frame`, `Inquisition`, `Litanies of the Lost`, `Notebook`, `Parchment`, `WrathAndGlory`.
+- Logotypy: po jednym teście z włączonym logo dla każdego z 14 wpisów `logos`: `Administratum`, `Apothecary`, `Aquila`, `Astra Militarum`, `Chaos Undivided`, `Inquisition`, `Khorne`, `Mechanicus`, `Medicae`, `Navigator`, `Nurgle`, `Slaanesh`, `Sororitas`, `Tzeentch`; dodatkowo jeden test z logo wyłączonym.
+- Fonty: po jednym teście dla każdego z 16 wpisów `fonts`: `Share Tech Mono`, `Cinzel`, `Rajdhani`, `IBM Plex Serif`, `Open Sans`, `Noto Serif`, `DM Serif Display`, `IBM Plex Sans Condensed`, `Exo 2`, `Black Ops One`, `Staatliches`, `Orbitron`, `Questrial`, `Russo One`, `Caveat`, `Great Vibes`.
+- Fillery: po jednym teście dla każdego z 14 wpisów `fillers`, z włączonymi prefixami i suffixami oraz co najmniej jedną linią z każdej strony; dodatkowo jeden test z fillerami wyłączonymi.
+- Minimalna praktyczna matryca może być sekwencyjna zamiast pełnego iloczynu kartezjańskiego: 10 testów teł, 14 testów logo, 16 testów fontów i 14 testów fillerów, przy stałej przykładowej wiadomości oraz domyślnych kolorach, plus testy wyłączenia logo i fillerów.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano wynik Etapu 2, weryfikację `data.json`, weryfikację ścieżek assetów, informację o `DataSlate_manifest.xlsx`, minimalny zestaw danych testowych oraz ryzyka przed Etapem 3.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: `Offline.md` zawierał plan Etapu 2, ale nie zawierał wyniku walidacji danych i assetów.
+- Stan po zmianie: dokument zawiera statyczny raport z walidacji `data.json`, lokalnych ścieżek assetów, ramek, manifestu XLSX i minimalnej matrycy testowej.
+- Powód zmiany: użytkownik poprosił o realizację Etapu 2 bez przedwczesnej przebudowy generatora i z opisaniem potencjalnych blokerów w dokumentacji.
+- Kod aplikacji, dane JSON, assety i pliki XLSX nie zostały zmienione.
+
+### Testy/sprawdzenia
+
+- Sprawdzono status repozytorium przed zmianami: `git status --short --branch` zwrócił czystą gałąź `work`.
+- Sprawdzono status repozytorium po zmianach dokumentacji: `git status --short --branch` pokazał jedynie zmodyfikowany plik `DataSlate_Offline/Offline.md` przed commitem.
+- Odczytano i sprawdzono `DataSlate_Offline/Offline.md` przed dopisaniem nowych sekcji.
+- Odczytano oraz zwalidowano `DataSlate_Offline/assets/data/data.json` skryptem Python z modułem `json`; wynik: JSON poprawny.
+- Sprawdzono klucze i liczebność list w `data.json`; wynik: `backgrounds=10`, `logos=14`, `audios=1`, `fonts=16`, `fillers=14`, `importLog=0`.
+- Sprawdzono 25 ścieżek z `backgrounds`, `logos` i `audios`; wynik: `path_issues=0`.
+- Sprawdzono pliki ramek inferowane z nazw teł; wynik: `inferred_frame_issues=0`.
+- Wyszukano zewnętrzne URL w `data.json` poleceniem `rg -n "https?://|//" DataSlate_Offline/assets/data/data.json`; wynik: brak dopasowań.
+- Sprawdzono obecność lokalnych katalogów assetów poleceniem `find DataSlate_Offline/assets -maxdepth 2 -type d -print | sort`.
+- Sprawdzono obecność `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx`; wynik: plik istnieje.
+- Nie wykonywano testów w przeglądarce ani automatycznych testów wizualnych, ponieważ zadanie dotyczyło statycznej weryfikacji danych i assetów przed przebudową generatora.
+
+### Ryzyka i następne kroki
+
+- Najważniejszy bloker przed pełnym offline w Etapie 3/4: brak lokalnych plików fontów przy jednoczesnej obecności nazw fontów Google w `data.json` i obecnym ładowaniu Google Fonts w starych plikach HTML.
+- Drugi istotny punkt do decyzji implementacyjnej: ustawienia layoutu zależne od tła nie są zapisane w `data.json`, tylko w obecnym rendererze jako mapa `CONTENT_RECTS_BY_BACKGROUND_ID`; trzeba je przenieść do nowej aktywnej ścieżki `index.html` albo rozszerzyć `data.json`.
+- Pliki ramek istnieją lokalnie, ale nie są jawnie mapowane w `data.json`; jeśli renderer Etapu 3/4 będzie potrzebował tych plików bez inferencji nazw, warto dodać jawne pola w danych albo utrzymać jednoznaczną konwencję nazewniczą.
+- Sekcja `audios` oraz katalog `assets/audios/` pozostają dla zgodności z manifestem, ale UI i renderer offline powinny ignorować audio.
+- Etap 2 został zakończony statycznie; można przejść do Etapu 3 pod warunkiem świadomego rozwiązania lokalnych fontów i przeniesienia mapy layoutów do docelowego `index.html` albo danych.
