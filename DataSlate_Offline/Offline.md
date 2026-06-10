@@ -2724,3 +2724,238 @@ Wykonano i/lub zaplanowano do finalnej walidacji po tej zmianie:
 - Preview używa tego samego renderera, ale bazowy viewport iframe ma 960×540. Jeżeli finalna karta zostanie otwarta w innym rozmiarze okna, responsywne dopasowanie overlayu może dać drobne różnice w skali lub łamaniu tekstu. To jest znane ograniczenie wynikające z zależności 1:1 od konkretnego viewportu.
 - Zalecany następny krok to ręczny test w przeglądarce: wpisać częściowe wartości hex w polach tekstowych, zmienić kolory pickerami, porównać preview z kartą po Generate oraz sprawdzić kilka teł/logo/fillerów.
 - Aktywna ścieżka pozostaje offline: bez Firebase, audio, Ping, Send/Wyślij, storage, postMessage, query i hash.
+
+## Aktualizacja — 2026-06-10 — Etap 8: finalizacja DataSlate Offline i cleanup legacy
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md oraz aktualny stan folderu DataSlate_Offline/.
+
+Zrealizuj:
+
+Etap 8 — finalizacja DataSlate Offline, cleanup legacy GM/DataSlate i aktualna dokumentacja użytkowa
+
+Celem Etapu 8 jest uporządkowanie modułu DataSlate_Offline po zakończonych etapach implementacji, testów i poprawek. Aktywna aplikacja offline działa już przez index.html, a stare pliki GM/DataSlate nie są już potrzebne.
+
+Decyzje użytkownika obowiązujące dla Etapu 8:
+
+1. Usunąć legacy pliki GM/DataSlate z DataSlate_Offline/.
+2. Zostawić index.html, index_backup.html i index_test.html.
+3. Przepisać dokumentację na aktualną instrukcję użytkową bez archiwizacji starej instrukcji legacy.
+4. Etap 8 jest etapem finalizacji, cleanupu i instrukcji użytkownika.
+5. Folder DataSlate/ pozostaje chroniony i nie wolno go modyfikować.
+
+Zakres prac:
+
+1. Przeczytaj aktualne:
+   - DataSlate_Offline/Offline.md,
+   - DataSlate_Offline/index.html,
+   - DataSlate_Offline/index_backup.html,
+   - DataSlate_Offline/index_test.html,
+   - DataSlate_Offline/tools/update_embedded_data.py,
+   - DataSlate_Offline/tests/etap7_regression.py,
+   - DataSlate_Offline/tests/Etap7_report.md,
+   - aktualny stan folderu DataSlate_Offline/.
+
+2. Usuń z DataSlate_Offline/ stare pliki legacy GM/DataSlate:
+   - DataSlate_Offline/GM.html,
+   - DataSlate_Offline/DataSlate.html,
+   - DataSlate_Offline/GM_backup.html,
+   - DataSlate_Offline/DataSlate_backup.html,
+   - DataSlate_Offline/GM_test.html,
+   - DataSlate_Offline/DataSlate_test.html.
+
+3. Nie usuwaj i nie zmieniaj bez potrzeby:
+   - DataSlate_Offline/index.html,
+   - DataSlate_Offline/index_backup.html,
+   - DataSlate_Offline/index_test.html,
+   - DataSlate_Offline/assets/,
+   - DataSlate_Offline/tools/,
+   - DataSlate_Offline/tests/,
+   - DataSlate_Offline/assets/data/DataSlate_manifest.xlsx,
+   - DataSlate_Offline/assets/data/data.json.
+
+4. Nie modyfikuj folderu DataSlate/.
+
+5. Przepisz dokumentację użytkową na aktualny stan DataSlate Offline.
+
+   Jeśli istnieją stare instrukcje użytkowe albo dokumentacja opisująca dawny workflow GM/DataSlate, Firebase, Firestore, Send/Wyślij, Ping, odbiornik, połączenie, online receiver albo audio, usuń je albo zastąp aktualną instrukcją offline.
+
+   Nie archiwizuj starej instrukcji legacy w dokumentacji użytkowej. Dokumentacja użytkowa ma opisywać tylko aktualny sposób działania modułu.
+
+6. Dokumentacja użytkowa powinna jasno opisywać:
+
+   - że aktywnym plikiem aplikacji jest DataSlate_Offline/index.html,
+   - że językiem domyślnym jest English,
+   - że Polski jest dostępny ręcznie w menu języka,
+   - że menu języka ma kolejność English, Polski,
+   - jak uruchomić aplikację online na hostingu/statycznym serwerze,
+   - jak uruchomić aplikację offline po pobraniu repozytorium na dysk,
+   - że aplikacja działa bez Firebase/Firestore,
+   - że aplikacja nie używa Send/Wyślij, Ping, odbiornika ani połączenia online,
+   - że kliknięcie Generate/Generuj otwiera nową kartę z gotowym ekranem DataSlate,
+   - że przeglądarka może wymagać zgody na wyskakujące okna,
+   - że Working preview używa tego samego renderera co finalna karta, ale może mieć drobne różnice skali zależne od rozmiaru viewportu,
+   - że dane są ładowane hybrydowo: fetch assets/data/data.json + embedded fallback,
+   - że DataSlate_manifest.xlsx pozostaje źródłem prawdy,
+   - że assets/data/data.json oraz embedded data są generowanymi artefaktami,
+   - że po zmianie manifestu należy uruchomić mechanizm aktualizacji danych offline,
+   - że mechanizm aktualizacji danych offline aktualizuje data.json, embedded data oraz synchronizuje index_backup.html i index_test.html,
+   - że Google Fonts nie są wymagane do działania; jeśli fonty nie są dostępne, aplikacja używa fallbacku systemowego.
+
+7. Zaktualizuj DataSlate_Offline/Offline.md.
+
+   Dopisz sekcję dokumentującą Etap 8:
+   - pełny prompt użytkownika,
+   - decyzje użytkownika,
+   - zakres prac,
+   - listę usuniętych plików legacy,
+   - listę plików pozostawionych jako aktywna struktura,
+   - informację, że dokumentacja użytkowa została przepisana bez archiwizacji starej instrukcji,
+   - informację, że folder DataSlate/ nie został zmodyfikowany,
+   - testy i sprawdzenia,
+   - ryzyka i następne kroki,
+   - wniosek, czy DataSlate Offline jest gotowy jako uporządkowany moduł.
+
+8. Jeżeli istnieje osobny README albo dokument użytkowy w DataSlate_Offline/, zaktualizuj go do aktualnego workflow offline.
+
+   Jeśli takiego dokumentu nie ma, rozważ utworzenie prostego:
+   - DataSlate_Offline/README.md
+
+   README powinien być praktyczną instrukcją użytkownika, nie historią etapów technicznych. Powinien zawierać aktualny sposób użycia aplikacji, uruchomienia online/offline, aktualizacji danych i podstawowe rozwiązywanie problemów.
+
+9. Zaktualizuj testy, jeśli usunięcie legacy plików wymaga korekty testów.
+
+   Szczególnie sprawdź, czy DataSlate_Offline/tests/etap7_regression.py nie zakłada istnienia usuwanych plików GM/DataSlate. Jeżeli zakłada, popraw testy tak, aby nowym oczekiwanym stanem był brak tych plików.
+
+10. Uruchom testy/sprawdzenia:
+
+   Wykonaj przynajmniej:
+   - git status przed zmianami,
+   - sprawdzenie listy plików w DataSlate_Offline przed i po cleanupie,
+   - python3 DataSlate_Offline/tests/etap7_regression.py,
+   - python3 DataSlate_Offline/tests/etap7_regression.py --markdown, jeżeli raport jest generowany tym mechanizmem,
+   - python3 -m json.tool DataSlate_Offline/assets/data/data.json,
+   - python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py,
+   - node --check dla JS z index.html albo dotychczasowy odpowiednik używany przez runner,
+   - sprawdzenie, że index.html, index_backup.html i index_test.html są zsynchronizowane,
+   - sprawdzenie, że embeddedDataSlateData jest zgodne z assets/data/data.json,
+   - skan aktywnej ścieżki pod kątem zakazanych mechanizmów: Firebase, Firestore, onSnapshot, currentRef.set, dataslate/current, config/firebase-config.js, localStorage, sessionStorage, postMessage, location.hash, location.search, URLSearchParams, SheetJS, runtime XLSX, audio playback, Ping, Send/Wyślij,
+   - git diff --name-only -- DataSlate, aby potwierdzić brak zmian w chronionym folderze DataSlate/.
+
+11. Nie rób w Etapie 8:
+   - nie modyfikuj folderu DataSlate/,
+   - nie usuwaj index.html,
+   - nie usuwaj index_backup.html,
+   - nie usuwaj index_test.html,
+   - nie usuwaj DataSlate_manifest.xlsx,
+   - nie usuwaj assets/data/data.json,
+   - nie dodawaj Firebase/Firestore,
+   - nie dodawaj audio,
+   - nie dodawaj Ping,
+   - nie dodawaj Send/Wyślij,
+   - nie dodawaj storage/postMessage/query/hash jako mechanizmu działania,
+   - nie przywracaj starego workflow GM/DataSlate,
+   - nie zostawiaj starej instrukcji użytkowej jako archiwum w aktualnej dokumentacji użytkowej.
+
+Na końcu przygotuj krótkie podsumowanie:
+- jakie pliki legacy usunięto,
+- jaka jest aktualna aktywna struktura DataSlate_Offline,
+- czy dokumentacja użytkowa została przepisana na aktualny tryb offline,
+- czy testy przeszły,
+- czy index.html/index_backup.html/index_test.html są zsynchronizowane,
+- czy folder DataSlate/ pozostał nietknięty,
+- czy DataSlate Offline można traktować jako uporządkowany moduł gotowy do dalszego używania.
+
+Utwórz PR z tymi zmianami.
+
+### Decyzje użytkownika
+
+- Etap 8 jest etapem finalizacji, cleanupu i aktualnej instrukcji użytkownika.
+- Aktywnym plikiem aplikacji pozostaje `DataSlate_Offline/index.html`.
+- `index_backup.html` oraz `index_test.html` mają pozostać w module i być zsynchronizowane z `index.html`.
+- Stare pliki GM/DataSlate mają zostać usunięte z `DataSlate_Offline/`.
+- Dokumentacja użytkowa ma opisywać wyłącznie aktualny tryb offline, bez archiwizowania dawnej instrukcji legacy.
+- Folder `DataSlate/` pozostaje chroniony i nie był modyfikowany.
+
+### Zakres prac
+
+- Odczytano aktualny kontekst modułu, wymagane pliki HTML, narzędzie synchronizacji danych, test regresji, raport Etapu 7 oraz aktualną listę plików w `DataSlate_Offline/`.
+- Usunięto legacy pliki GM/DataSlate wskazane przez użytkownika.
+- Usunięto pozostałości dawnej konfiguracji Firebase z `DataSlate_Offline/config/`, ponieważ były instrukcją i konfiguracją starego workflow online, niezgodną z finalnym trybem offline.
+- Utworzono praktyczny `DataSlate_Offline/README.md` i przepisano dokumentację w `docs/` na aktualny workflow offline.
+- Zaktualizowano notę `Disclaimer.md` oraz techniczną notatkę `assets/data/NiebieskaRamka.md`, aby nie odsyłały do dawnego workflow GM/DataSlate.
+- Zaktualizowano runner regresji tak, aby nowym oczekiwanym stanem był brak legacy plików GM/DataSlate oraz brak dawnych plików konfiguracji Firebase.
+- Zaktualizowano raport regresji dla Etapu 8.
+
+### Usunięte pliki legacy
+
+- `DataSlate_Offline/GM.html`
+- `DataSlate_Offline/DataSlate.html`
+- `DataSlate_Offline/GM_backup.html`
+- `DataSlate_Offline/DataSlate_backup.html`
+- `DataSlate_Offline/GM_test.html`
+- `DataSlate_Offline/DataSlate_test.html`
+- `DataSlate_Offline/config/FirebaseREADME.md`
+- `DataSlate_Offline/config/firebase-config.js`
+
+### Pliki pozostawione jako aktywna struktura
+
+- `DataSlate_Offline/index.html` — aktywna aplikacja offline.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowana kopia bezpieczeństwa.
+- `DataSlate_Offline/index_test.html` — zsynchronizowana kopia testowa.
+- `DataSlate_Offline/assets/` — lokalne tła, ramki, logotypy, dane i istniejące assety.
+- `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx` — źródło prawdy dla danych.
+- `DataSlate_Offline/assets/data/data.json` — wygenerowany artefakt danych dla aplikacji.
+- `DataSlate_Offline/tools/update_embedded_data.py` — mechanizm aktualizacji embedded data i synchronizacji HTML.
+- `DataSlate_Offline/tests/` — testy i raport regresji.
+- `DataSlate_Offline/README.md`, `DataSlate_Offline/docs/README.md`, `DataSlate_Offline/docs/Documentation.md`, `DataSlate_Offline/Disclaimer.md` — aktualna dokumentacja/note użytkowe i techniczne bez archiwum starej instrukcji legacy.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/README.md` — dodano aktualną praktyczną instrukcję użytkownika dla trybu offline.
+- `DataSlate_Offline/docs/README.md` — zastąpiono dawny opis krótkim wskaźnikiem do aktualnego workflow offline.
+- `DataSlate_Offline/docs/Documentation.md` — przepisano dokumentację techniczną na aktualny model `index.html → payload lokalny → renderer → nowa karta`.
+- `DataSlate_Offline/Disclaimer.md` — uproszczono notę użytkową, usuwając narrację zależną od starej migracji.
+- `DataSlate_Offline/assets/data/NiebieskaRamka.md` — zaktualizowano checklistę utrzymaniową dla aktualnej struktury offline.
+- `DataSlate_Offline/tests/etap7_regression.py` — dodano oczekiwanie braku legacy plików i zaktualizowano opis runnera do Etapu 8.
+- `DataSlate_Offline/tests/Etap7_report.md` — zaktualizowano raport regresji dla Etapu 8.
+- `DataSlate_Offline/Offline.md` — dopisano niniejszy wpis changelogowy i pełny prompt użytkownika.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: w folderze `DataSlate_Offline/` nadal istniały legacy pliki `GM.html`, `DataSlate.html` oraz ich warianty backup/test. Stan po zmianie: pliki zostały usunięte, a aktywną ścieżką pozostało `index.html` z kopiami `index_backup.html` i `index_test.html`. Powód: użytkownik wskazał, że stare pliki GM/DataSlate nie są już potrzebne po zakończeniu implementacji offline.
+- Stan przed zmianą: dokumentacja w `docs/` oraz pliki `config/` opisywały dawny workflow Firebase/Firestore, ekran odbiorczy, ping, audio i konfigurację online. Stan po zmianie: dokumentacja użytkowa opisuje wyłącznie aktualny generator offline, a dawne pliki konfiguracji Firebase usunięto. Powód: dokumentacja użytkowa nie ma archiwizować starej instrukcji legacy.
+- Stan przed zmianą: test regresji nie sprawdzał nieobecności plików legacy. Stan po zmianie: runner ma listę `LEGACY_FILES` i waliduje, że wskazane pliki nie istnieją. Powód: po Etapie 8 brak tych plików jest oczekiwanym stanem modułu.
+- Stan przed zmianą: raport regresji opisywał Etap 7. Stan po zmianie: raport opisuje Etap 8 i nowy zakres cleanupu. Powód: raport ma odpowiadać aktualnej finalizacji modułu.
+
+### Dokumentacja użytkowa
+
+Dokumentacja użytkowa została przepisana bez archiwizacji starej instrukcji legacy. Aktualny `README.md` jasno opisuje aktywny plik `index.html`, domyślny język English, ręczny wybór Polski, kolejność menu English/Polski, uruchamianie online i offline, brak Firebase/Firestore, brak Send/Wyślij, Ping, odbiornika i połączenia online, działanie Generate/Generuj, wymóg zgody na pop-upy, charakter Working preview, hybrydowe ładowanie danych, rolę manifestu, generowane artefakty danych, aktualizację danych offline oraz fallback fontów systemowych.
+
+### Testy i sprawdzenia
+
+- `git status --short` przed zmianami: repozytorium było czyste.
+- `find DataSlate_Offline -maxdepth 3 -type f | sort` przed cleanupem: potwierdzono obecność legacy plików GM/DataSlate oraz dawnej konfiguracji Firebase.
+- `find DataSlate_Offline -maxdepth 3 -type f | sort` po cleanupie: potwierdzono brak legacy plików i pozostawienie `index.html`, `index_backup.html`, `index_test.html`, `assets/`, `tools/` oraz `tests/`.
+- `python3 DataSlate_Offline/tests/etap7_regression.py`: PASS.
+- `python3 DataSlate_Offline/tests/etap7_regression.py --markdown`: PASS.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json`: PASS.
+- `python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py`: PASS.
+- `node --check` dla wyekstrahowanego skryptu z `index.html`: PASS.
+- Sprawdzenie synchronizacji `index.html`, `index_backup.html`, `index_test.html`: PASS, pliki są bajtowo identyczne.
+- Sprawdzenie zgodności `embeddedDataSlateData` z `assets/data/data.json`: PASS.
+- Skan aktywnej ścieżki pod kątem zakazanych mechanizmów: PASS, runner nie wykrył Firebase/Firestore, `onSnapshot`, `currentRef.set`, `dataslate/current`, `config/firebase-config.js`, storage, `postMessage`, query/hash, SheetJS/runtime XLSX, audio playback, Ping ani Send/Wyślij.
+- `git diff --name-only -- DataSlate`: PASS, brak zmian w chronionym folderze `DataSlate/`.
+
+### Ryzyka i następne kroki
+
+- Runner pozostaje testem statycznym i Node VM; końcowa weryfikacja wizualna w realnej przeglądarce jest nadal zalecana przy kolejnych zmianach layoutu albo danych.
+- Jeżeli manifest `DataSlate_manifest.xlsx` zostanie zmieniony, należy najpierw odświeżyć generowany `assets/data/data.json` zgodnie z workflow projektu, a następnie uruchomić `tools/update_embedded_data.py` dla embedded data i kopii HTML.
+- Asset `assets/audios/KeyboardTyping.mp3` oraz lista `audios` w `data.json` pozostały w strukturze assetów/danych, ale aktywny renderer offline ich nie odtwarza.
+
+### Wniosek
+
+DataSlate Offline można traktować jako uporządkowany moduł gotowy do dalszego używania: aktywna aplikacja działa przez `index.html`, legacy GM/DataSlate zostały usunięte, dokumentacja użytkowa opisuje aktualny tryb offline, testy regresji przechodzą, pliki `index.html` / `index_backup.html` / `index_test.html` są zsynchronizowane, a folder `DataSlate/` pozostał nietknięty.
