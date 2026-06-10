@@ -420,3 +420,170 @@ Dopisz do niej plan wdrożenia oraz pytania dotyczące ewentualnych decyzji bizn
 - Przed implementacją należy rozstrzygnąć pytania biznesowe dotyczące zakresu zgodności wizualnej, sposobu dystrybucji, wsparcia przeglądarek oraz utrzymania danych i assetów.
 - Należy szczególnie uważać, aby podczas kolejnych etapów nie modyfikować chronionego folderu `DataSlate/`.
 - Następny rekomendowany krok techniczny to inwentaryzacja aktywnych zależności Firebase, audio i sieciowych w `DataSlate_Offline/` oraz wskazanie najmniejszego bezpiecznego zakresu pierwszego refaktoru.
+
+## Aktualizacja — 2026-06-10 — odpowiedzi na pytania biznesowe i produktowe
+
+### Oryginalny pełny prompt użytkownika
+
+Poniżej moje odpowiedzi na zadane pytania. Dodaj je do pliku DataSlate_Offline/Offline.md
+
+1. Czy DataSlate_Offline ma być wyłącznie narzędziem do screenshotów przed sesją, czy ma również obsługiwać użycie na żywo przy stole bez internetu?
+- DataSlate Offline generuje samodzielne statyczne ekrany w nowych kartach. Nie pełni funkcji aktywnego odbiornika aktualizowanego na żywo.
+
+2. Czy moduł offline ma zastąpić w praktyce część zastosowań wersji online, czy ma być tylko narzędziem pomocniczym dla Mistrza Gry?
+- Moduł Offline ma być alternatywą dla zwykłego modułu DataSlate
+
+3. Czy priorytetem jest maksymalna zgodność wizualna z obecnym DataSlate, czy dopuszczalne są uproszczenia, jeśli znacząco skrócą wdrożenie?
+- Maksymalna zgodność wizualna
+
+4. Czy wymagany jest tryb porównawczy online/offline dla testów, czy wystarczy ręczne porównanie z wersją referencyjną?
+- Ręczne porównanie
+
+1. Jaka ma być finalna nazwa widoczna w interfejsie: DataSlate Offline, DataSlate — generator offline, czy inna?
+- DataSlate Offline
+
+2. Czy użytkownik ma widzieć informację, że moduł nie używa Firebase i nie wysyła danych do sieci?
+- Nie
+
+3. Czy w interfejsie mają pozostać jakiekolwiek ślady terminologii z wersji online, np. Wyślij, Ping, połączenie, odbiornik, czy należy je całkowicie usunąć?
+- Całkowicie usuwamy
+
+4. Czy generator ma ostrzegać przy próbie otwarcia wielu kart, czy każde kliknięcie Generuj powinno po prostu tworzyć nową kartę?
+- Bez ostrzeżeń. Każde kliknięcie to nowa karta.
+
+1. Czy wszystkie efekty wizualne z wersji online są wymagane w wersji offline, czy część można pominąć jako nieistotną dla statycznego screenshotu?
+- Prostokąt cienia i Flicker kasujemy z wersji Offline.
+
+2. Czy audio ma zostać całkowicie usunięte z UI i kodu aktywnego, czy tylko ignorowane dla zgodności payloadu?
+- Ignorowane. W UI ma nie być śladu po audio, ale plik wsadowy DataSlate_manifest.xlsx i utworzony data.json będą identyczne dla wersji Online i Offline.
+
+3. Czy akcje typu clear i ping mają zostać całkowicie usunięte, czy zachowane wyłącznie jako nieaktywne pola kompatybilności?
+- Ping jest zbędny. Clear może zostać, żeby wyczyścić tekst.
+
+4. Czy generator powinien pozwalać zapisać/pobrać wygenerowany payload jako JSON do późniejszego użycia?
+- Nie dodajemy eksportu/importu payloadu JSON. Payload istnieje tylko wewnętrznie w kodzie podczas generowania karty.
+
+5. Czy potrzebny jest przycisk resetowania formularza do ustawień domyślnych?
+- Tak
+
+6. Czy potrzebny jest przycisk kopiowania payloadu albo eksportu gotowego HTML-a?
+- Nie dodajemy przycisku kopiowania payloadu ani eksportu gotowego HTML-a. Jedyną główną akcją generującą wynik pozostaje Generuj.
+
+1. Czy DataSlate_manifest.xlsx ma pozostać w repozytorium jako źródło danych, czy po wygenerowaniu assets/data/data.json powinien zostać usunięty z modułu offline?
+- Pozostaje
+
+2. Kto będzie właścicielem procesu aktualizacji assets/data/data.json, gdy zmienią się tła, logotypy, fonty albo fillery?
+- Aktualizacja danych odbywa się przez aktualizację DataSlate_manifest.xlsx, wygenerowanie nowego assets/data/data.json oraz aktualizację odpowiednich folderów z plikami.
+
+3. Czy wszystkie assety z wersji online mają zostać skopiowane do offline, czy tylko wybrany zestaw potrzebny do screenshotów?
+- Wszystkie
+
+4. Czy istnieją assety, których nie wolno dystrybuować w pakiecie offline ze względów licencyjnych?
+- Nie
+
+5. Czy offline ma wspierać własne assety użytkownika dodawane lokalnie, czy tylko assety dostarczone w repozytorium?
+- Wersja Offline wspiera assety dostarczone w repozytorium i opisane w data.json. Nie dodajemy UI do wgrywania własnych assetów. Ewentualne nowe assety dodaje się przez aktualizację manifestu/data.json i folderów z plikami.
+
+1. Czy moduł ma działać po bezpośrednim otwarciu pliku index.html z dysku, czy dopuszczalne jest wymaganie prostego lokalnego serwera statycznego?
+- Moduł ma działać offline lokalnie z dysku c:\ oraz online poprzez host na github
+
+2. Jakie przeglądarki mają być wspierane jako minimalny zakres testów?
+- Te same co w wersji Online
+
+3. Czy użytkownicy będą korzystać z modułu na desktopie, tablecie, czy także na urządzeniach mobilnych?
+- Domyślnie na PC
+
+4. Czy docelowy screenshot ma mieć konkretną rozdzielczość albo proporcje ekranu?
+- Nie
+
+5. Czy nowa karta ma być zoptymalizowana pod pełny ekran, okno przeglądarki, czy konkretny rozmiar capture’u?
+- Nie
+
+1. Czy struktura payloadu offline ma być formalnie kompatybilna z wersją online, nawet jeżeli część pól jest ignorowana?
+- Payload Offline powinien być możliwie kompatybilny z Online, ale renderer Offline ignoruje pola audio, ping i Firebase.
+
+2. Czy po zmianach w wersji online należy każdorazowo synchronizować renderer offline, czy offline ma rozwijać się niezależnie?
+- Rozwój niezależnie
+
+3. Czy pliki GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html mają pozostać w module, czy powinny zostać usunięte po zakończeniu migracji?
+- Pliki "backup" i "test" będą potrzebne również w wersji Offline. Po zakończeniu projektu wszystkie będą zawierać dokładnie ten sam kod.
+
+4. Czy dokumentacja Firebase w DataSlate_Offline/config/ ma zostać zachowana jako historyczna, czy usunięta, aby nie sugerowała zależności online?
+- Dokumentacja oraz Readme będą do przepisania
+
+5. Czy wymagany jest automatyczny test wykrywający zewnętrzne żądania sieciowe albo importy Firebase w aktywnej ścieżce aplikacji?
+- Nie dodajemy automatycznego testu. Weryfikacja braku Firebase i zewnętrznych żądań będzie ręczna podczas odbioru.
+
+1. Czy akceptacja ma wymagać pełnej zgodności wizualnej z normalnym DataSlate, czy wystarczy zgodność funkcjonalna i ogólna zgodność stylu?
+- Offline ma być możliwie jaknajbardziej zbliżony do wersji Online.
+
+2. Jaki minimalny zestaw kombinacji tło/logo/font/filler powinien zostać przetestowany przed uznaniem wdrożenia za zakończone?
+- Wdrożenie będzie zakończone jak uznam, że wszystko działa jak oczekuję.
+
+3. Czy test screenshotowy ma być wykonywany ręcznie, czy warto dodać automatyczny test wizualny?
+- Testy wizualne robimy ręcznie. Nie dodajemy automatycznego porównywania screenshotów.
+
+4. Czy brak jakichkolwiek zewnętrznych żądań sieciowych ma być formalnym kryterium blokującym odbiór?
+- Nie rozumiem pytania
+
+5. Czy brak Firebase w aktywnej ścieżce działania ma być weryfikowany ręcznie, czy automatycznie przez wyszukiwanie/import scan?
+- Brak Firebase, CDN i zewnętrznych usług jest wymaganiem. Sprawdzamy to ręcznie, nie automatycznym testem.
+
+### Zakres prac
+
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed zmianą dokumentacji.
+- Dopisano pełny prompt użytkownika zawierający odpowiedzi na wcześniej zapisane pytania biznesowe i produktowe.
+- Dopisano syntetyczne ustalenia wynikające z odpowiedzi, aby kolejne prace implementacyjne mogły korzystać z nich jako z decyzji projektowych.
+- Nie zmieniono kodu aplikacji, assetów, danych JSON, manifestu XLSX ani chronionego folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- `DataSlate Offline` generuje samodzielne statyczne ekrany w nowych kartach i nie jest aktywnym odbiornikiem aktualizowanym na żywo.
+- Moduł offline ma być alternatywą dla zwykłego DataSlate, a nie jedynie pobocznym narzędziem pomocniczym.
+- Priorytetem jest maksymalna możliwa zgodność wizualna z wersją online; porównanie będzie wykonywane ręcznie.
+- Finalna nazwa w interfejsie to `DataSlate Offline`.
+- Interfejs nie powinien pokazywać komunikatu o braku Firebase ani o niewysyłaniu danych do sieci.
+- Z interfejsu należy całkowicie usunąć ślady terminologii online: `Wyślij`, `Ping`, `połączenie`, `odbiornik`.
+- Każde kliknięcie `Generuj` ma tworzyć nową kartę bez ostrzeżeń o wielu kartach.
+- Z wersji offline należy usunąć prostokąt cienia i efekt Flicker.
+- Audio ma być ignorowane w aktywnym działaniu; UI nie może zawierać śladów audio, ale `DataSlate_manifest.xlsx` i `assets/data/data.json` mają pozostać zgodne między wersją Online i Offline.
+- `Ping` jest zbędny, natomiast `Clear` może zostać jako akcja czyszcząca tekst.
+- Nie dodajemy eksportu/importu payloadu JSON, kopiowania payloadu ani eksportu gotowego HTML-a; payload istnieje tylko wewnętrznie podczas generowania karty.
+- Należy dodać przycisk resetowania formularza do ustawień domyślnych.
+- `DataSlate_manifest.xlsx` pozostaje w repozytorium jako źródło danych, a aktualizacja danych odbywa się przez aktualizację manifestu, wygenerowanie nowego `assets/data/data.json` i aktualizację folderów z plikami.
+- Wersja offline ma zawierać wszystkie assety z wersji online; nie ma wskazanych ograniczeń licencyjnych dla dystrybucji pakietu offline.
+- Własne assety użytkownika nie dostają osobnego UI; nowe assety dodaje się przez manifest, `data.json` i foldery z plikami.
+- Moduł ma działać lokalnie z dysku `c:\` oraz online przez host na GitHub.
+- Minimalny zakres przeglądarek jest taki sam jak w wersji online, a domyślnym środowiskiem użycia jest PC.
+- Screenshot nie ma narzuconej konkretnej rozdzielczości, proporcji ani zoptymalizowanego rozmiaru capture’u.
+- Payload offline powinien być możliwie kompatybilny z payloadem online, ale renderer offline ignoruje pola audio, ping i Firebase.
+- Wersja offline ma rozwijać się niezależnie od wersji online.
+- Pliki `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html` i `DataSlate_test.html` mają pozostać w module; po zakończeniu projektu wszystkie mają zawierać dokładnie ten sam kod.
+- Dokumentacja oraz README w module offline będą do przepisania, aby nie sugerować zależności online.
+- Nie dodajemy automatycznych testów wykrywających zewnętrzne żądania, Firebase/CDN ani automatycznego porównywania screenshotów; weryfikacja pozostaje ręczna.
+- Brak Firebase, CDN i zewnętrznych usług pozostaje wymaganiem modułu offline, mimo że nie będzie sprawdzany automatycznym testem.
+- Akceptacja wdrożenia nastąpi wtedy, gdy użytkownik uzna, że wszystko działa zgodnie z oczekiwaniami.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano pełny prompt użytkownika oraz decyzje projektowe wynikające z odpowiedzi na pytania biznesowe i produktowe.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: `Offline.md` zawierał plan wdrożenia i listę pytań biznesowych bez odpowiedzi.
+- Stan po zmianie: dokument zawiera pełne odpowiedzi użytkownika oraz uporządkowaną listę decyzji dotyczących roli modułu, UI, efektów, audio, danych, assetów, środowiska, kompatybilności, dokumentacji i testów.
+- Powód zmiany: użytkownik poprosił o dodanie odpowiedzi do `DataSlate_Offline/Offline.md`.
+- Kod aplikacji nie został zmieniony.
+
+### Testy
+
+- Sprawdzono status repozytorium przed zmianą.
+- Sprawdzono aktualną treść `DataSlate_Offline/Offline.md` przed dopisaniem nowej sekcji.
+- Sprawdzono różnicę w Git po zmianie dokumentacji.
+- Nie wykonywano testów funkcjonalnych aplikacji, ponieważ zadanie dotyczyło wyłącznie aktualizacji dokumentacji i nie zmieniało aktywnej ścieżki działania modułu.
+
+### Ryzyka i następne kroki
+
+- W kolejnych etapach implementacji należy pamiętać, że część wcześniejszych rekomendacji została doprecyzowana: w UI nie ma być informacji o braku Firebase, efekt Flicker i prostokąt cienia mają zostać usunięte, a przycisk resetowania formularza jest wymagany.
+- Odpowiedź „Nie rozumiem pytania” przy formalnym kryterium blokującym brak zewnętrznych żądań oznacza, że wymaganie braku Firebase/CDN/zewnętrznych usług pozostaje ważne, ale sposób odbioru i kryterium blokujące należy w razie potrzeby doprecyzować w rozmowie.
+- Następny rekomendowany krok to przełożenie decyzji z tej sekcji na minimalny zakres zmian w interfejsie i aktywnej ścieżce `DataSlate_Offline`.
