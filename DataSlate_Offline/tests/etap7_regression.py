@@ -204,6 +204,9 @@ def check_external_dependencies(index_text: str, data: dict) -> str:
 def check_index_structure(index_text: str) -> str:
     checks = {
         "html lang en": r"<html\s+lang=\"en\"",
+        "float content rect clamp": r"function\s+clampFloat\s*\(\s*value\s*,\s*min\s*,\s*max\s*,\s*fallback\s*\)",
+        "normalizeContentRect uses clampFloat": r"function\s+normalizeContentRect\s*\([\s\S]*?clampFloat\(source\.x[\s\S]*?clampFloat\(source\.w",
+        "DataSlate timestamp title": r"function\s+buildSlateDocumentTitle\s*\([\s\S]*?DataSlate \${formatSlateTitleTimestamp",
         "default currentLanguage en": r"let\s+currentLanguage\s*=\s*'en'",
         "I18N pl": r"const\s+I18N\s*=\s*\{[\s\S]*?\bpl\s*:",
         "I18N en": r"const\s+I18N\s*=\s*\{[\s\S]*?\ben\s*:",
@@ -304,8 +307,16 @@ const context = {{
 }};
 vm.createContext(context);
 vm.runInContext(code, context, {{ filename: 'index-main-script.js' }});
-const testCode = `
+const testCode = String.raw`
 (function() {{
+  const sampleRect = {{ x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 }};
+  const normalizedSampleRect = normalizeContentRect(sampleRect);
+  if (Math.abs(normalizedSampleRect.x - sampleRect.x) > 0.000001) throw new Error('normalizeContentRect floored fractional x');
+  if (Math.abs(normalizedSampleRect.y - sampleRect.y) > 0.000001) throw new Error('normalizeContentRect floored fractional y');
+  if (Math.abs(normalizedSampleRect.w - sampleRect.w) > 0.000001) throw new Error('normalizeContentRect did not preserve fractional width');
+  if (Math.abs(normalizedSampleRect.h - sampleRect.h) > 0.000001) throw new Error('normalizeContentRect did not preserve fractional height');
+  if (normalizedSampleRect.w <= 0.5 || normalizedSampleRect.h <= 0.5) throw new Error('normalizeContentRect produced microscopic dimensions');
+
   const sample = {{
     backgroundId: 10,
     backgroundFile: 'assets/backgrounds/WnG.png',
@@ -313,16 +324,26 @@ const testCode = `
     logoFile: 'assets/logos/Aquila.png',
     showLogo: true,
     fillersEnabled: true,
-    prefixLines: ['+++'],
-    suffixLines: ['---'],
-    text: 'Stage 7 test message\\\\nSecond line',
+    prefixLines: ['+++ PREFIX +++'],
+    suffixLines: ['--- SUFFIX ---'],
+    text: 'Stage 7 test message\\nSecond line',
+    createdAt: '2026-06-10T09:42:31Z',
     messageColor: '#00ff66',
     prefixSuffixColor: '#ffffff',
     logoColor: '#d4af37',
     fontPreset: 'Orbitron',
     msgFontSize: 22,
     psFontSize: 12,
-    contentRect: {{ x: 0.12, y: 0.09, w: 0.74, h: 0.80 }}
+    contentRect: sampleRect
+  }};
+  const userReportedVariant = {{
+    ...sample,
+    backgroundId: 6,
+    backgroundFile: 'assets/backgrounds/DataSlate_Inq.png',
+    text: 'dasdas',
+    prefixLines: ['+++ INQ PREFIX +++'],
+    suffixLines: ['--- INQ SUFFIX ---'],
+    contentRect: {{ x: 0.1214, y: 0.0962, w: 0.7385, h: 0.8081 }}
   }};
   const variants = [
     sample,
@@ -331,19 +352,31 @@ const testCode = `
     {{ ...sample, text: '' }},
     {{ ...sample, fontPreset: null }},
     {{ ...sample, contentRect: {{ x: -9, y: 4, w: 99, h: null }} }},
-    {{ ...sample, backgroundId: 1, backgroundFile: 'assets/backgrounds/DataSlate_01.png', contentRect: {{ x: 0.0642, y: 0.0762, w: 0.8707, h: 0.8124 }} }}
+    {{ ...sample, backgroundId: 1, backgroundFile: 'assets/backgrounds/DataSlate_01.png', contentRect: {{ x: 0.0642, y: 0.0762, w: 0.8707, h: 0.8124 }} }},
+    userReportedVariant
   ];
   for (const payload of variants) {{
     const html = buildOfflineSlateHTML(payload);
+    const normalizedRect = normalizeContentRect(payload.contentRect);
+    const titleMatch = html.match(new RegExp('<title>([^<]+)</title>'));
+    if (!titleMatch) throw new Error('generated HTML misses title');
+    const title = titleMatch[1];
+    if (!title.startsWith('DataSlate ')) throw new Error('generated title does not start with DataSlate: ' + title);
+    const firstMessageLine = String(payload.text || '').split(String.fromCharCode(10))[0];
+    if (firstMessageLine && title.includes(firstMessageLine)) throw new Error('generated title contains message text: ' + title);
+    if (title === 'Test' || title === 'dasdas' || title === 'Stage 7 test message') throw new Error('generated title uses payload message');
     if (!html.startsWith('<!doctype html>')) throw new Error('generated HTML is not a full document');
-    for (const token of [payload.backgroundFile, 'id="overlay"', 'PAYLOAD_CONTENT_RECT', 'Stage 7 test message']) {{
-      if (payload.text === '' && token === 'Stage 7 test message') continue;
+    for (const token of [payload.backgroundFile, 'id="overlay"', 'PAYLOAD_CONTENT_RECT']) {{
       if (!html.includes(token)) throw new Error('generated HTML missing token: ' + token);
     }}
+    if (payload.text && !html.includes(escapeHtml(payload.text))) throw new Error('generated HTML missing escaped message text');
     if (payload.showLogo && !html.includes(payload.logoFile)) throw new Error('logo-enabled HTML misses logo file');
-    if (!payload.showLogo && html.includes('class="slate-logo"')) throw new Error('logo-disabled HTML still renders logo element');
-    if (payload.fillersEnabled && !html.includes('+++')) throw new Error('fillers-enabled HTML misses prefix');
-    if (!payload.fillersEnabled && html.includes('<div id="prefix" class="prefix">+++')) throw new Error('fillers-disabled HTML still renders visible prefix text');
+    if (payload.showLogo && !html.includes('id="logo" class="logo"')) throw new Error('logo-enabled HTML misses logo element');
+    if (!payload.showLogo && html.includes('id="logo" class="logo"')) throw new Error('logo-disabled HTML still renders logo element');
+    if (payload.fillersEnabled && !html.includes(payload.prefixLines[0])) throw new Error('fillers-enabled HTML misses prefix');
+    if (payload.fillersEnabled && !html.includes(payload.suffixLines[0])) throw new Error('fillers-enabled HTML misses suffix');
+    if (!payload.fillersEnabled && html.includes('<div id="prefix" class="prefix">' + payload.prefixLines[0])) throw new Error('fillers-disabled HTML still renders visible prefix text');
+    if (payload === userReportedVariant && (normalizedRect.w <= 0.5 || normalizedRect.h <= 0.5)) throw new Error('user-reported variant overlay is microscopic');
     for (const forbidden of ['firebase', 'Firestore', 'postMessage', 'localStorage', 'sessionStorage', 'new Audio', '.play(']) {{
       if (html.includes(forbidden)) throw new Error('generated HTML contains forbidden token: ' + forbidden);
     }}
@@ -363,7 +396,7 @@ vm.runInContext(testCode, context, {{ filename: 'stage7-dynamic-test.js' }});
             fail("Node dynamic generated-HTML test failed:\nSTDOUT:\n" + proc.stdout + "\nSTDERR:\n" + proc.stderr)
     finally:
         temp_path.unlink(missing_ok=True)
-    return "Node VM generated HTML test passed for logo/filler/message/font/contentRect payload variants and embedded fallback parsing"
+    return "Node VM generated HTML test passed for fractional contentRect, user-reported overlay variant, timestamp title, logo/filler/message variants and embedded fallback parsing"
 
 
 def check_node_syntax(index_text: str) -> str:
