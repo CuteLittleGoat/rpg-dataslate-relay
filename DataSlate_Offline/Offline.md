@@ -587,3 +587,96 @@ Poniżej moje odpowiedzi na zadane pytania. Dodaj je do pliku DataSlate_Offline/
 - W kolejnych etapach implementacji należy pamiętać, że część wcześniejszych rekomendacji została doprecyzowana: w UI nie ma być informacji o braku Firebase, efekt Flicker i prostokąt cienia mają zostać usunięte, a przycisk resetowania formularza jest wymagany.
 - Odpowiedź „Nie rozumiem pytania” przy formalnym kryterium blokującym brak zewnętrznych żądań oznacza, że wymaganie braku Firebase/CDN/zewnętrznych usług pozostaje ważne, ale sposób odbioru i kryterium blokujące należy w razie potrzeby doprecyzować w rozmowie.
 - Następny rekomendowany krok to przełożenie decyzji z tej sekcji na minimalny zakres zmian w interfejsie i aktywnej ścieżce `DataSlate_Offline`.
+
+## Aktualizacja — 2026-06-10 — Etap 0: inwentaryzacja i zabezpieczenie zakresu
+
+### Oryginalny pełny prompt użytkownika
+
+Przeczytaj plik DataSlate_Offline/Offline.md a następnie zrealizuj:
+Etap 0 — inwentaryzacja i zabezpieczenie zakresu
+
+### Zakres prac
+
+- Przeczytano aktualną treść `DataSlate_Offline/Offline.md` przed rozpoczęciem inwentaryzacji.
+- Sprawdzono aktualny stan repozytorium przed zmianą dokumentacji; drzewo robocze było czyste.
+- Zinwentaryzowano pliki i podfoldery w `DataSlate_Offline/` bez modyfikowania chronionego folderu `DataSlate/`.
+- Sprawdzono aktywne i pomocnicze pliki HTML pod kątem ról wejściowych, zależności Firebase, Firestore, audio, ping oraz zewnętrznych URL/CDN.
+- Sprawdzono podstawową strukturę `DataSlate_Offline/assets/data/data.json` jako obecnego lokalnego źródła danych.
+- Nie zmieniano kodu aplikacji, assetów, konfiguracji Firebase, dokumentacji poza tym dziennikiem ani folderu `DataSlate/`.
+
+### Ustalenia i decyzje
+
+- Zakres edycji pozostaje ograniczony do `DataSlate_Offline/`; folder `DataSlate/` jest w tym etapie wyłącznie materiałem referencyjnym i nie został zmodyfikowany.
+- Bieżący `DataSlate_Offline/index.html` jest launcherem, a nie docelowym generatorem offline: linkuje do `GM.html`, `DataSlate.html`, `GM_test.html` i `DataSlate_test.html` oraz nadal zawiera widoczną wzmiankę o audio.
+- Obecna aktywna ścieżka produkcyjna nadal wygląda jak wersja online: `GM.html` publikuje payload do Firestore, a `DataSlate.html` nasłuchuje dokumentu Firestore.
+- Pliki `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html` i `DataSlate_test.html` są obecnie technicznie zbliżone do wariantów online i również zawierają zależności Firebase/CDN/audio/ping; zgodnie z wcześniejszą decyzją użytkownika mają pozostać w module i docelowo zawierać ten sam kod co główne pliki offline.
+- Dokumentacja `config/FirebaseREADME.md`, `docs/Documentation.md` i `docs/README.md` nadal opisuje model online/Firebase i wymaga późniejszego przepisania, aby nie sugerować zależności online w module offline.
+- `assets/data/data.json` istnieje i zawiera klucze `backgrounds`, `logos`, `audios`, `fonts`, `fillers` oraz `importLog`; obecnie obejmuje 10 teł, 14 logotypów, 1 audio, 16 fontów, 14 zestawów fillerów i pusty `importLog`.
+- `assets/data/DataSlate_manifest.xlsx` i `assets/data/Mapowanie.xlsx` pozostają w module jako pliki źródłowe/deweloperskie, ale aktywne działanie offline powinno docelowo bazować na gotowym `assets/data/data.json`.
+- Inwentaryzacja potwierdza, że Etap 1 powinien rozpocząć się od decyzji/implementacji docelowej struktury `index.html` jako generatora albo wariantu wieloplikowego bez Firebase.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/Offline.md` — dopisano pełny prompt użytkownika oraz wynik Etapu 0: inwentaryzację plików, aktywnych wejść, zależności online, ryzyk i kolejnych kroków.
+
+### Szczegóły zmian
+
+#### Stan folderu i plików
+
+- Stan przed zmianą: `Offline.md` zawierał plan wdrożenia, odpowiedzi biznesowe i wskazanie, że kolejnym krokiem jest Etap 0, ale nie zawierał wykonanej inwentaryzacji aktualnego drzewa plików.
+- Stan po zmianie: dokument zawiera wynik inwentaryzacji obecnego folderu `DataSlate_Offline/`.
+- W folderze znajdują się główne pliki HTML: `index.html`, `GM.html`, `DataSlate.html`, ich warianty `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html`, `DataSlate_test.html`, dokumenty `Offline.md`, `Disclaimer.md`, `docs/Documentation.md`, `docs/README.md`, konfiguracja `config/firebase-config.js`, dokumentacja `config/FirebaseREADME.md`, lokalne assety graficzne, lokalne audio oraz dane w `assets/data/`.
+
+#### Potwierdzenie plików wejściowych
+
+- `index.html` obecnie pełni rolę launchera i prowadzi do produkcyjnych oraz testowych widoków, ale nie jest jeszcze właściwym generatorem offline.
+- `GM.html` jest obecnie panelem GM opartym o Firebase/Firestore; ładuje `assets/data/data.json`, potrafi pobrać `DataSlate_manifest.xlsx` i wygenerować pobierany plik `data.json`, ale zapisuje payload przez `currentRef.set(...)`.
+- `DataSlate.html` jest obecnie ekranem odbiorczym opartym o Firebase/Firestore; renderuje tło, overlay, logo, tekst i fillery, ale robi to po `onSnapshot(...)` dokumentu Firestore.
+- `GM_backup.html`, `DataSlate_backup.html`, `GM_test.html` i `DataSlate_test.html` pozostają w module i obecnie również wymagają oczyszczenia z architektury online.
+- `assets/data/data.json` jest obecnym lokalnym manifestem danych dla list teł, logotypów, audio, fontów i fillerów.
+
+#### Firebase, Firestore i komunikacja online
+
+- Importy lub odniesienia Firebase/Firestore wykryto w plikach HTML produkcyjnych, backupowych i testowych: `GM.html`, `GM_backup.html`, `GM_test.html`, `DataSlate.html`, `DataSlate_backup.html`, `DataSlate_test.html`.
+- `GM*.html` zawierają import `config/firebase-config.js`, importy Firebase z `https://www.gstatic.com/firebasejs/9.6.8/...`, inicjalizację `firebase.initializeApp(...)`, `firebase.firestore()`, `firebase.firestore.FieldValue.serverTimestamp()` oraz zapisy `currentRef.set(...)`.
+- `DataSlate*.html` zawierają import `config/firebase-config.js`, importy Firebase z `https://www.gstatic.com/firebasejs/9.6.8/...`, inicjalizację Firebase/Firestore oraz `ref.onSnapshot(...)`.
+- `config/firebase-config.js` nadal zawiera realną konfigurację klienta Firebase dla projektu `rpg-dataslate-relay` i powinien zostać usunięty z aktywnej ścieżki offline w późniejszym etapie.
+- `config/FirebaseREADME.md`, `docs/Documentation.md` i `docs/README.md` nadal opisują model Firestore i wymagają przepisania w późniejszych etapach.
+
+#### Audio, ping, clear i efekty
+
+- `GM*.html` zawierają UI i payload dla `audioSelect`, `audioEnabled`, `messageAudioId`, `messageAudioFile`, `pingUrl` oraz przycisk `Ping`.
+- `DataSlate*.html` zawierają `PING_URL`, `new Audio(...)`, obsługę `type === 'ping'` i odtwarzanie audio dla wiadomości.
+- W `assets/audios/` znajdują się lokalne pliki `KeyboardTyping.mp3` i `ping/Ping.mp3`; zgodnie z decyzją użytkownika audio może pozostać w danych/assetach dla zgodności, ale UI i aktywny renderer offline mają je ignorować.
+- `Clear` jest obecnie częścią logiki panelu i zgodnie z decyzją użytkownika może pozostać jako akcja czyszczenia tekstu, ale nie powinien wymagać zapisu do Firestore.
+- Efekty `flicker` i prostokąt cienia są nadal obecne w HTML/CSS i będą wymagały usunięcia z wersji offline zgodnie z decyzjami biznesowymi.
+
+#### Zewnętrzne zależności sieciowe
+
+- Zewnętrzne fonty Google wykryto w `GM.html`, `GM_backup.html`, `GM_test.html`, `DataSlate.html`, `DataSlate_backup.html` i `DataSlate_test.html` przez `fonts.googleapis.com` oraz `fonts.gstatic.com`.
+- Zewnętrzne skrypty Firebase z `www.gstatic.com` wykryto w plikach `GM*.html` i `DataSlate*.html`.
+- Zewnętrzny CDN SheetJS `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js` wykryto w `GM.html`, `GM_backup.html` i `GM_test.html`.
+- `Disclaimer.md` i `docs/README.md` zawierają zewnętrzne adresy URL w dokumentacji; nie są one aktywną ścieżką działania, ale powinny zostać przejrzane przy przepisywaniu dokumentacji offline.
+- Docelowy generator offline nie może zależeć od żadnego z powyższych zewnętrznych zasobów.
+
+#### Dane i assety
+
+- Lokalne tła znajdują się w `assets/backgrounds/`, ramki w `assets/ramki/`, logotypy w `assets/logos/`, audio w `assets/audios/`, a dane w `assets/data/`.
+- `data.json` zawiera listy wymagane przez formularz i renderer: tła, logotypy, fonty, fillery oraz wpis audio dla zgodności z manifestem.
+- Na tym etapie nie zmieniano struktury `data.json`, więc nie wykonywano pełnej walidacji mapowania ścieżek assetów, prefixów/suffixów ani wyboru tła/logo/fontu poza potwierdzeniem obecności głównych kluczy i liczebności list.
+
+### Testy
+
+- Sprawdzono status repozytorium przed zmianą: drzewo robocze było czyste.
+- Wypisano pliki i podfoldery `DataSlate_Offline/` poleceniem `find`, bez używania `ls -R`.
+- Przeskanowano `DataSlate_Offline/` poleceniem `rg` pod kątem `firebase`, `firestore`, `onSnapshot`, `currentRef.set`, `dataslate/current`, `ping`, `audio`, `mp3`, zewnętrznych URL, Google Fonts, Firebase CDN i SheetJS CDN.
+- Sprawdzono strukturę `assets/data/data.json` krótkim skryptem Python odczytującym JSON i raportującym klucze oraz liczebność list.
+- Nie wykonywano testu otwierania modułu w przeglądarce ani kliknięcia `Generuj`, ponieważ w obecnym stanie Etap 0 był inwentaryzacją, a aplikacja nie ma jeszcze docelowego przycisku `Generuj` ani lokalnego renderera offline.
+- Nie wykonywano testu braku zewnętrznych żądań sieciowych w narzędziach przeglądarki; statyczne skanowanie wykazało istniejące zależności online, które muszą zostać usunięte w kolejnych etapach.
+
+### Ryzyka i następne kroki
+
+- Największe ryzyko techniczne to nadal silne sprzężenie głównych plików HTML i wariantów test/backup z Firebase, Firestore, Google Fonts i CDN SheetJS.
+- Przed wdrażaniem właściwego generatora należy zdecydować, czy `index.html` przejmie rolę jedynego głównego generatora, czy utrzymany zostanie podział wieloplikowy z lokalnym przekazaniem payloadu.
+- Następny rekomendowany krok to Etap 1: wybór i opis docelowej struktury aplikacji, a następnie rozpoczęcie minimalnych zmian w aktywnej ścieżce tylko w `DataSlate_Offline/`.
+- Przy kolejnych etapach trzeba pamiętać, że folder `DataSlate/` pozostaje nietykalny, a wszelkie porównania z wersją online mogą mieć wyłącznie charakter odczytowy.
