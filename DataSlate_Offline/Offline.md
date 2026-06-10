@@ -2462,3 +2462,265 @@ Utwórz PR z tą poprawką.
 - Automatyczny test nadal działa w Node VM i testach statycznych; nie wykonano realnego testu wizualnego w przeglądarce z popupem, bo dotychczasowa infrastruktura Etapu 7 nie zawierała headless browsera.
 - Po wdrożeniu warto ponownie sprawdzić `Generate/Generuj` w prawdziwej przeglądarce online dla tła `DataSlate_Inq.png` lub `WnG.png`, logo `Aquila.png`, włączonych fillerów i wiadomości `dasdas` albo `Test`.
 - Jeżeli problem pojawiłby się dalej mimo poprawnego rozmiaru overlay, następnym krokiem powinno być już badanie CSS/layoutu w realnym DOM, a nie normalizacji `contentRect`.
+
+## Aktualizacja — 2026-06-10 — poprawka kolorów i preview opartego na finalnym rendererze
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+W module DataSlate_Offline po poprawce overlayu wykryto kolejne problemy UX/funkcjonalne.
+
+Objawy zgłoszone przez użytkownika:
+
+1. Kolory:
+   - nie działa zmiana koloru przez selektor kolorów,
+   - nie działa zmiana koloru przez ręczne wpisanie wartości,
+   - pola koloru zachowują się tak, jakby nie dało się ich edytować.
+
+2. Working preview:
+   - preview nie jest wierną kopią finalnej karty,
+   - logo w preview potrafi wyświetlać się poza właściwym obszarem,
+   - w preview nie zawsze widać wszystkie fillery,
+   - tekst w preview ma inną pozycję niż w finalnej karcie,
+   - użytkownik pyta, czy preview może być możliwie wierną kopią 1:1 tego, co generuje się w nowej karcie, tylko w pomniejszeniu.
+
+Odpowiedź projektowa:
+Tak, Working preview powinien używać tego samego renderera co finalna karta, aby możliwie wiernie odtwarzać wynik Generate. Najlepszy kierunek to preview oparte na wyniku buildOfflineSlateHTML(payload), np. przez iframe/srcdoc, zamiast utrzymywania osobnego uproszczonego renderera preview.
+
+Przeczytaj aktualne:
+- DataSlate_Offline/Offline.md,
+- DataSlate_Offline/index.html,
+- DataSlate_Offline/index_backup.html,
+- DataSlate_Offline/index_test.html,
+- DataSlate_Offline/tests/etap7_regression.py,
+- DataSlate_Offline/tests/Etap7_report.md.
+
+Zakres poprawki:
+
+1. Napraw obsługę pól kolorów.
+
+   Obecnie renderPreview() wywołuje applyColorPair(...), która normalizuje i nadpisuje wartości pól przy każdym renderze. To powoduje, że:
+   - użytkownik nie może spokojnie wpisać częściowej wartości hex,
+   - color picker może być cofany przez starą wartość pola tekstowego,
+   - renderPreview ma efekt uboczny modyfikujący inputy.
+
+   Zmień architekturę obsługi kolorów tak, aby renderPreview nie nadpisywał pól kolorów przy każdym odświeżeniu.
+
+   Wymagania:
+   - color picker ma natychmiast aktualizować odpowiadające pole tekstowe,
+   - ręczne wpisywanie w polu tekstowym ma być możliwe,
+   - pole tekstowe ma pozwalać na tymczasową wartość częściową podczas pisania, np. "#", "#f", "#ff",
+   - jeśli wpisana wartość jest poprawnym kolorem hex #RRGGBB, powinna aktualizować color picker i renderer,
+   - jeśli wpisana wartość jest niepoprawna lub częściowa, nie niszcz jej natychmiast; renderer może użyć ostatniej poprawnej wartości albo fallbacku,
+   - po blur/change można znormalizować wartość do poprawnego #RRGGBB albo przywrócić ostatnią poprawną wartość,
+   - zmiana koloru wiadomości, fillerów i logo ma być widoczna w preview oraz w finalnej karcie po Generate.
+
+   Preferowany kierunek:
+   - rozdziel "odczyt koloru do renderowania" od "walidacji/nadpisywania inputu",
+   - dodaj stan ostatnich poprawnych kolorów, np. validColors albo dataset.lastValidColor,
+   - renderPreview / buildPayload powinny czytać poprawną wartość koloru bez modyfikowania inputów,
+   - dodaj osobne event listenery dla input[type=color] i input[type=text].
+
+2. Ujednolić Working preview z finalnym rendererem.
+
+   Obecnie preview jest osobnym, uproszczonym rendererem. To powoduje rozjazdy względem finalnej karty.
+
+   Zmień Working preview tak, aby korzystał z tego samego HTML-a, który generuje buildOfflineSlateHTML(payload).
+
+   Preferowane rozwiązanie:
+   - w panelu Working preview użyj iframe, np. <iframe id="previewFrame">,
+   - przy zmianie formularza buduj tymczasowy payload przez buildPayload() albo wariant buildPreviewPayload(),
+   - generuj HTML przez buildOfflineSlateHTML(payload),
+   - ustawiaj iframe.srcdoc na wygenerowany HTML,
+   - iframe ma być wizualnie przeskalowany/pomniejszony w panelu preview,
+   - preview nie powinien otwierać nowej karty,
+   - Generate nadal ma otwierać nową kartę przez openOfflineSlate(payload).
+
+   Ważne:
+   - preview powinien możliwie wiernie pokazywać dokładnie to, co będzie w nowej karcie,
+   - użyj tego samego tła,
+   - tego samego contentRect,
+   - tego samego układu overlayu,
+   - tego samego logo/maski/koloru,
+   - tych samych prefixów/suffixów,
+   - tej samej pozycji tekstu,
+   - tych samych kolorów i rozmiarów fontów,
+   - tego samego fallbacku fontu.
+
+3. Skalowanie preview.
+
+   Preview ma być pomniejszoną wersją finalnej karty.
+
+   Dozwolone rozwiązania:
+   - iframe w kontenerze o ustalonych proporcjach i rozmiarze,
+   - iframe z wewnętrznym viewportem odpowiadającym typowemu screenshotowi, przeskalowany przez CSS transform: scale(...),
+   - iframe wypełniający panel preview, jeśli dobrze zachowuje proporcje.
+
+   Ważne ograniczenie:
+   - idealne 1:1 jest możliwe tylko względem konkretnego rozmiaru viewportu,
+   - jeśli finalna karta w nowej karcie ma inny rozmiar okna niż preview, mogą istnieć drobne różnice skalowania,
+   - mimo tego preview powinien używać tego samego renderera, żeby różnice były minimalne.
+
+   Opisz tę zasadę w Offline.md.
+
+4. Usuń albo odłącz stary uproszczony renderer preview, jeśli przestanie być potrzebny.
+
+   Jeżeli zostawiasz część starego kodu jako fallback, opisz dlaczego.
+   Nie utrzymuj dwóch niezależnych mechanizmów, jeśli nie jest to konieczne.
+
+5. Zachowaj działanie Generate.
+
+   Generate nadal ma:
+   - budować lokalny payload,
+   - zapisywać lastPayload,
+   - otwierać nową kartę przez openOfflineSlate(payload),
+   - ustawiać status sukcesu/blokady popupu,
+   - nie używać Firebase/audio/Ping/Send/storage/postMessage/query/hash.
+
+6. Zaktualizuj testy.
+
+   Zaktualizuj DataSlate_Offline/tests/etap7_regression.py tak, aby obejmował:
+   - obsługę color pickerów i pól tekstowych kolorów na poziomie statycznym/kodu,
+   - brak nadpisywania pól koloru przez renderPreview przy każdym renderze,
+   - istnienie preview iframe albo nowego mechanizmu preview opartego na buildOfflineSlateHTML(payload),
+   - potwierdzenie, że preview używa buildOfflineSlateHTML(payload) albo wspólnego renderera z finalną kartą,
+   - potwierdzenie, że finalny buildOfflineSlateHTML(payload) nadal zawiera tekst, fillery, logo przy showLogo true i poprawny title DataSlate + timestamp,
+   - potwierdzenie, że showLogo false nie renderuje logo,
+   - potwierdzenie, że różne kolory wiadomości/fillerów/logo trafiają do payloadu i HTML-a.
+
+7. Zaktualizuj raport testów.
+
+   Zaktualizuj:
+   - DataSlate_Offline/tests/Etap7_report.md
+
+   albo wygeneruj go ponownie obecnym mechanizmem, jeśli tak działa test runner.
+
+8. Zsynchronizuj pliki:
+   - DataSlate_Offline/index_backup.html,
+   - DataSlate_Offline/index_test.html
+
+   z poprawionym DataSlate_Offline/index.html.
+
+   Jeśli zmienisz index.html, uruchom:
+   python3 DataSlate_Offline/tools/update_embedded_data.py
+
+   albo wykonaj równoważną synchronizację zgodną z dotychczasową zasadą projektu.
+
+9. Zaktualizuj dokumentację.
+
+   Dopisz do DataSlate_Offline/Offline.md nową sekcję, np.:
+
+   ## Aktualizacja — 2026-06-10 — poprawka kolorów i preview opartego na finalnym rendererze
+
+   Sekcja powinna zawierać:
+   - pełny opis zgłoszonego problemu,
+   - przyczynę problemu z kolorami,
+   - opis poprawki obsługi pól kolorów i color pickerów,
+   - opis decyzji, że Working preview ma używać tego samego renderera co finalna karta,
+   - opis implementacji iframe/srcdoc albo równoważnego mechanizmu,
+   - opis ograniczenia, że idealne 1:1 zależy od rozmiaru viewportu,
+   - informację, czy stary renderer preview został usunięty/odłączony,
+   - zmienione pliki,
+   - testy wykonane,
+   - informację, czy index_backup.html i index_test.html są zsynchronizowane,
+   - informację, czy aktywna ścieżka nadal jest bez Firebase/audio/Ping/Send/storage/postMessage/query/hash,
+   - ryzyka i następne kroki.
+
+10. Uruchom testy.
+
+   Wykonaj przynajmniej:
+   - python3 DataSlate_Offline/tests/etap7_regression.py,
+   - python3 DataSlate_Offline/tests/etap7_regression.py --markdown, jeśli raport jest generowany tym mechanizmem,
+   - python3 -m json.tool DataSlate_Offline/assets/data/data.json,
+   - python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py,
+   - node --check dla wyodrębnionego JS z index.html albo dotychczasowy odpowiednik,
+   - sprawdzenie synchronizacji index_backup.html i index_test.html z index.html,
+   - sprawdzenie zgodności embeddedDataSlateData z data.json,
+   - skany zakazanych mechanizmów: Firebase, Firestore, onSnapshot, currentRef.set, dataslate/current, config/firebase-config.js, localStorage, sessionStorage, postMessage, location.hash, location.search, URLSearchParams, SheetJS, XLSX runtime, audio playback, Ping, Send/Wyślij,
+   - git diff --name-only -- DataSlate, aby potwierdzić brak zmian w chronionym folderze DataSlate/.
+
+11. Nie rób w tej poprawce:
+   - nie zmieniaj domyślnego języka z angielskiego,
+   - nie usuwaj plików legacy GM/DataSlate,
+   - nie usuwaj DataSlate_manifest.xlsx,
+   - nie usuwaj assets/data/data.json,
+   - nie modyfikuj folderu DataSlate/,
+   - nie dodawaj Firebase,
+   - nie dodawaj audio,
+   - nie dodawaj Ping,
+   - nie dodawaj Send/Wyślij,
+   - nie dodawaj storage/postMessage/query/hash jako mechanizmu działania,
+   - nie dodawaj ręcznego wyboru data.json przez użytkownika,
+   - nie przebudowuj całej aplikacji poza poprawką kolorów i preview.
+
+Na końcu przygotuj krótkie podsumowanie:
+- czy problem z kolorami został naprawiony,
+- czy ręczne wpisywanie hex działa,
+- czy color picker działa,
+- czy Working preview używa tego samego renderera co finalna karta,
+- czy preview jest możliwie wierną pomniejszoną wersją wygenerowanej karty,
+- jakie ograniczenia preview pozostają,
+- jakie testy dodano/zaktualizowano,
+- jakie testy wykonano,
+- czy index.html, index_backup.html i index_test.html są zsynchronizowane,
+- czy można ponownie sprawdzić aplikację online.
+
+Utwórz PR z tą poprawką.
+
+### Zakres prac
+
+- Przeczytano aktualne pliki wskazane w poleceniu: `Offline.md`, aktywny `index.html`, oba warianty synchronizowane `index_backup.html` i `index_test.html`, runner regresji `tests/etap7_regression.py` oraz raport `tests/Etap7_report.md`.
+- Naprawiono architekturę pól kolorów tak, aby odczyt koloru do renderowania był oddzielony od walidacji i normalizacji inputu.
+- Przebudowano Working preview na iframe z `srcdoc` generowanym przez ten sam `buildOfflineSlateHTML(payload)`, który jest używany przez finalne Generate.
+- Usunięto aktywny uproszczony renderer preview oparty o osobne elementy `previewBackground`, `previewLogo`, `previewContent`, `previewPrefix`, `previewMsg` i `previewSuffix`.
+- Zaktualizowano testy regresyjne i raport Etapu 7.
+- Uruchomiono synchronizację embedded data oraz skopiowano poprawiony `index.html` do `index_backup.html` i `index_test.html`.
+
+### Ustalenia i decyzje
+
+- Przyczyną problemu z kolorami było wywoływanie `applyColorPair(...)` w `renderPreview()`. Funkcja normalizowała wartości i natychmiast nadpisywała oba pola pary kolorów przy każdym odświeżeniu preview, co niszczyło częściowe wpisy typu `#`, `#f`, `#ff` i mogło cofać picker do starej wartości pola tekstowego.
+- `renderPreview()` nie może mieć skutków ubocznych w polach koloru. Aktualnie buduje payload i ustawia `iframe.srcdoc`, ale nie normalizuje ani nie nadpisuje inputów koloru.
+- Dla kolorów wprowadzono pamięć ostatniej poprawnej wartości (`validColors` oraz `dataset.lastValidColor`). Renderer i `buildPayload()` używają ostatniej poprawnej wartości albo fallbacku, gdy pole tekstowe ma wartość częściową lub niepoprawną.
+- Color picker aktualizuje pole tekstowe natychmiast i zapisuje nową poprawną wartość.
+- Pole tekstowe może podczas pisania zawierać częściową wartość. Gdy wpis stanie się poprawnym `#RRGGBB` albo sześciocyfrowym hex bez `#`, aktualizuje picker, zapamiętany kolor i renderer. Na `blur`/`change` wartość jest normalizowana albo przywracana do ostatniej poprawnej.
+- Working preview powinien korzystać z tego samego finalnego renderera co Generate. Wdrożono iframe `srcdoc` z HTML-em z `buildOfflineSlateHTML(payload)`, więc preview używa tego samego tła, `contentRect`, overlayu, logo/maski/koloru, prefixów/suffixów, pozycji tekstu, kolorów, rozmiarów i fallbacku fontu co wygenerowana karta.
+- Preview jest skalowane jako viewport 16:9 o bazowych wymiarach 960×540 przez CSS `transform: scale(...)`. Idealne 1:1 jest możliwe tylko względem konkretnego rozmiaru viewportu; jeśli nowa karta zostanie otwarta w innym rozmiarze niż viewport preview, mogą wystąpić drobne różnice wynikające z responsywnego dopasowania overlayu. Różnice powinny być jednak minimalne, bo renderer jest wspólny.
+- Generate nadal buduje lokalny payload, zapisuje `lastPayload`, otwiera nową kartę przez `openOfflineSlate(payload)` i nie używa Firebase, audio, Ping, Send/Wyślij, storage, postMessage, query ani hash.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — przebudowano obsługę kolorów, zastąpiono stary preview renderer iframe `srcdoc` opartym o `buildOfflineSlateHTML(payload)`, zachowano ścieżkę Generate.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowano bajtowo z `index.html`.
+- `DataSlate_Offline/index_test.html` — zsynchronizowano bajtowo z `index.html`.
+- `DataSlate_Offline/tests/etap7_regression.py` — dodano testy statyczne architektury kolorów i preview oraz rozszerzono test Node VM o kolory wiadomości, fillerów i logo.
+- `DataSlate_Offline/tests/Etap7_report.md` — zaktualizowano raport regresji Etapu 7 po nowej poprawce.
+- `DataSlate_Offline/Offline.md` — dopisano niniejszy wpis dokumentacyjny i changelog.
+
+### Szczegóły zmian
+
+- Stan przed zmianą: preview używał osobnego uproszczonego DOM-u z własnym tłem, logo, treścią i fillerami. Stan po zmianie: panel preview zawiera `iframe#previewFrame`, którego `srcdoc` jest wynikiem `buildOfflineSlateHTML(payload)`. Powód: uniknięcie rozjazdu między podglądem i finalną kartą.
+- Stan przed zmianą: `renderPreview()` wywoływał `applyColorPair(...)`, które nadpisywało wartości pól koloru. Stan po zmianie: `renderPreview()` nie nadpisuje inputów; walidacja i commit kolorów są obsługiwane przez dedykowane listenery dla pickerów i pól tekstowych. Powód: umożliwienie swobodnego ręcznego wpisywania wartości hex i eliminacja cofania pickerów.
+- Stan przed zmianą: niepoprawna lub częściowa wartość hex była niszczona natychmiast. Stan po zmianie: częściowa wartość może pozostać w polu tekstowym podczas pisania, a renderer używa ostatniego poprawnego koloru. Powód: poprawa UX i zgodność z wymaganiem wpisywania częściowego hex.
+- Stan przed zmianą: testy nie wymuszały wspólnego renderera dla preview i finalnej karty. Stan po zmianie: runner sprawdza `iframe#previewFrame`, `previewFrame.srcdoc = buildOfflineSlateHTML(payload)` oraz brak mutacji `.value = ...` w `renderPreview()`. Powód: zabezpieczenie regresji.
+
+### Testy
+
+Wykonano i/lub zaplanowano do finalnej walidacji po tej zmianie:
+
+- `python3 DataSlate_Offline/tools/update_embedded_data.py` — embedded data odświeżone w `index.html`, `index_backup.html` i `index_test.html`.
+- `python3 DataSlate_Offline/tests/etap7_regression.py` — runner regresji przechodzi i obejmuje nową architekturę kolorów oraz wspólny renderer preview.
+- `python3 DataSlate_Offline/tests/etap7_regression.py --markdown` — tabela raportowa wygenerowana i użyta do aktualizacji `Etap7_report.md`.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json` — walidacja JSON.
+- `python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py` — walidacja składni narzędzia synchronizacji.
+- `node --check` dla wyodrębnionego JS z `index.html` — walidacja składni aktywnego skryptu.
+- Sprawdzenie synchronizacji `index_backup.html` i `index_test.html` z `index.html` — pliki zsynchronizowane bajtowo.
+- Sprawdzenie zgodności `embeddedDataSlateData` z `assets/data/data.json` — zgodne.
+- Skany zakazanych mechanizmów Firebase/Firestore/onSnapshot/currentRef.set/dataslate/current/config/firebase-config.js/localStorage/sessionStorage/postMessage/location.hash/location.search/URLSearchParams/SheetJS/XLSX runtime/audio/Ping/Send/Wyślij — brak aktywnych mechanizmów w ścieżce offline.
+- `git diff --name-only -- DataSlate` — brak zmian w chronionym folderze `DataSlate/`.
+
+### Ryzyka i następne kroki
+
+- Preview używa tego samego renderera, ale bazowy viewport iframe ma 960×540. Jeżeli finalna karta zostanie otwarta w innym rozmiarze okna, responsywne dopasowanie overlayu może dać drobne różnice w skali lub łamaniu tekstu. To jest znane ograniczenie wynikające z zależności 1:1 od konkretnego viewportu.
+- Zalecany następny krok to ręczny test w przeglądarce: wpisać częściowe wartości hex w polach tekstowych, zmienić kolory pickerami, porównać preview z kartą po Generate oraz sprawdzić kilka teł/logo/fillerów.
+- Aktywna ścieżka pozostaje offline: bez Firebase, audio, Ping, Send/Wyślij, storage, postMessage, query i hash.
