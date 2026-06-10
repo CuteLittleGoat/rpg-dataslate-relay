@@ -1593,3 +1593,141 @@ Docelowy mechanizm ładowania danych powinien działać następująco:
 - Kolejny etap powinien przygotować narzędzie aktualizacji danych offline generujące jednocześnie `data.json` i embedded data w `index.html`, `index_backup.html` oraz `index_test.html`.
 - Po wdrożeniu mechanizmu trzeba sprawdzić oba tryby: hosting statyczny / lokalny serwer oraz bezpośrednie otwarcie `DataSlate_Offline/index.html` z dysku.
 - Można przejść do przygotowania Etapu 4, pod warunkiem uwzględnienia hybrydowego ładowania danych jako wymagania wejściowego dla implementacji `openOfflineSlate(payload)` i `buildOfflineSlateHTML(payload)`.
+
+## Aktualizacja — 2026-06-10 — Etap 4: lokalne generowanie nowej karty
+
+### Oryginalny pełny prompt użytkownika
+
+Repozytorium: CuteLittleGoat/rpg-dataslate-relay
+
+Przeczytaj aktualny plik DataSlate_Offline/Offline.md i pracuj zgodnie z zapisanym tam planem, decyzjami i stylem dokumentowania zmian.
+
+Zrealizuj:
+
+Etap 4 — lokalne generowanie nowej karty
+
+Celem Etapu 4 jest dodanie do DataSlate_Offline/index.html mechanizmu, który po kliknięciu Generuj otwiera nową kartę i zapisuje do niej kompletny dokument HTML z gotowym ekranem DataSlate. Etap 4 ma też rozwiązać wymaganie działania zarówno online na serwerze statycznym, jak i offline po bezpośrednim otwarciu DataSlate_Offline/index.html z dysku C:\.
+
+Najważniejsze decyzje obowiązujące przed Etapem 4:
+
+- Głównym plikiem modułu offline jest DataSlate_Offline/index.html.
+- index.html jest aktywnym panelem generatora offline.
+- Payload jest tworzony lokalnie i istnieje tylko wewnętrznie w czasie generowania.
+- Nie używamy localStorage, sessionStorage, postMessage, query/hash ani eksportu/importu JSON/HTML jako podstawowego mechanizmu działania.
+- Nie używamy Firebase, Firestore, onSnapshot, currentRef.set, dataslate/current ani config/firebase-config.js.
+- Nie używamy SheetJS ani runtime’owego parsowania DataSlate_manifest.xlsx w przeglądarce.
+- Nie używamy audio, Ping ani Wyślij.
+- Folder DataSlate/ jest chroniony i wolno go używać wyłącznie referencyjnie. Nie modyfikuj go.
+- Pliki GM.html, DataSlate.html, GM_backup.html, DataSlate_backup.html, GM_test.html i DataSlate_test.html pozostają tymczasowym materiałem referencyjnym. Nie usuwaj ich w Etapie 4.
+- index_backup.html i index_test.html muszą być zsynchronizowane z index.html po zmianach.
+
+Zakres Etapu 4 obejmował: przeczytanie `Offline.md`, `index.html`, `index_backup.html`, `index_test.html`, `assets/data/data.json` i obecnych narzędzi; wdrożenie hybrydowego ładowania danych przez `fetch('assets/data/data.json', { cache: 'no-store' })` z fallbackiem embedded; dodanie embedded data do `index.html`, `index_backup.html` i `index_test.html`; przygotowanie narzędzia aktualizacji embedded data; implementację `openOfflineSlate(payload)` oraz `buildOfflineSlateHTML(payload)`; zmianę działania przycisku `Generuj`; zachowanie PL/EN; synchronizację kopii backup/test; aktualizację dokumentacji; wykonanie walidacji JSON, HTML, JS, kontroli zakazanych mechanizmów i kontroli braku zmian w `DataSlate/`; utworzenie PR z tymi zmianami. Prompt użytkownika zawierał następnie ponownie tę samą treść od słów „Repozytorium: CuteLittleGoat/rpg-dataslate-relay” do „Utwórz PR z tymi zmianami.”.
+
+### Zakres prac
+
+- Przeczytano bieżący `DataSlate_Offline/Offline.md` oraz stan aktywnych plików `index.html`, `index_backup.html`, `index_test.html` i `assets/data/data.json`.
+- Sprawdzono, że w repozytorium nie było istniejącego skryptu generującego `DataSlate_Offline/assets/data/data.json` z `DataSlate_Offline/assets/data/DataSlate_manifest.xlsx`.
+- Dodano hybrydowe ładowanie danych w aktywnym panelu offline.
+- Dodano embedded fallback `embeddedDataSlateData` do `index.html` i zsynchronizowano go do `index_backup.html` oraz `index_test.html`.
+- Dodano minimalne narzędzie utrzymaniowe `DataSlate_Offline/tools/update_embedded_data.py`, które czyta i waliduje `assets/data/data.json`, odświeża embedded data oraz synchronizuje kopie backup/test z `index.html`.
+- Dodano `buildOfflineSlateHTML(payload)` generujące kompletny dokument HTML gotowy do screenshotu.
+- Dodano `openOfflineSlate(payload)` używające `window.open("", "_blank")`, `document.open()`, `document.write(html)` i `document.close()`.
+- Zmieniono obsługę przycisku `Generuj`: buduje payload, zapisuje go jako `lastPayload`, aktualizuje podsumowanie i otwiera nową kartę DataSlate.
+- Zachowano PL/EN dla nowych komunikatów, w tym komunikatu sukcesu i popup blockera.
+- Nie modyfikowano folderu `DataSlate/` ani starych plików referencyjnych GM/DataSlate.
+
+### Ustalenia i decyzje
+
+- `DataSlate_Offline/assets/data/data.json` pozostaje bieżącym artefaktem danych używanym przez aplikację na serwerze statycznym.
+- Embedded data w HTML są fallbackiem dla trybu `file://`, a nie osobnym ręcznie edytowanym źródłem prawdy.
+- Pełne generowanie `data.json` z `DataSlate_manifest.xlsx` pozostaje istniejącym lub osobnym procesem poza zakresem Etapu 4, ponieważ w repozytorium nie znaleziono gotowego narzędzia importującego XLSX.
+- Etap 4 renderuje realny ekran DataSlate w nowej karcie, ale pełna wierność finalnego renderera online pozostaje tematem Etapu 5.
+
+### Hybrydowe ładowanie danych
+
+- `loadManifest()` próbuje najpierw pobrać `assets/data/data.json` przez `fetch(DATA_URL, { cache: 'no-store' })`.
+- Jeżeli `fetch` powiedzie się, formularz korzysta z danych JSON tak jak w trybie serwerowym.
+- Jeżeli `fetch` nie powiedzie się, np. przy bezpośrednim otwarciu przez `file://`, kod loguje ostrzeżenie techniczne w konsoli i używa `parseEmbeddedManifest()`.
+- `applyManifestData(data)` inicjalizuje formularz identycznie niezależnie od źródła danych.
+
+### Embedded fallback
+
+- `index.html`, `index_backup.html` i `index_test.html` zawierają blok `<script type="application/json" id="embeddedDataSlateData">` z aktualną strukturą `assets/data/data.json`.
+- Embedded fallback zawiera listy teł, logotypów, fontów, fillerów, audio pozostające w strukturze danych oraz `importLog`; audio nadal nie jest używane przez renderer offline.
+- Dane embedded są generowanym artefaktem utrzymaniowym i powinny być odświeżane skryptem, a nie ręcznie.
+
+### Narzędzie aktualizacji embedded data
+
+- Dodano `DataSlate_Offline/tools/update_embedded_data.py`.
+- Skrypt czyta `DataSlate_Offline/assets/data/data.json`, waliduje JSON przez `json.load()`, aktualizuje blok `embeddedDataSlateData` w `index.html`, a następnie zapisuje identyczną treść do `index_backup.html` i `index_test.html`.
+- Skrypt nie parsuje XLSX w przeglądarce ani poza nią; dokumentuje, że pełna regeneracja `data.json` z `DataSlate_manifest.xlsx` jest osobnym procesem.
+
+### openOfflineSlate(payload)
+
+- `openOfflineSlate(payload)` przyjmuje lokalny payload, buduje HTML przez `buildOfflineSlateHTML(payload)` i otwiera nową kartę przez `window.open('', '_blank')`.
+- Jeżeli przeglądarka zablokuje popup, funkcja pokazuje `alert(...)`, ustawia status `statusPopupBlocked` i zwraca `false`.
+- Jeżeli karta zostanie otwarta, funkcja zapisuje kompletny dokument przez `document.open()`, `document.write(html)`, `document.close()` i zwraca `true`.
+
+### buildOfflineSlateHTML(payload)
+
+- `buildOfflineSlateHTML(payload)` zwraca kompletny dokument HTML z własnym `<head>`, stylem, tłem, logotypem, treścią, prefixami/suffixami i metadanymi payloadu w ukrytym bloku JSON.
+- Dokument korzysta z lokalnych ścieżek assetów zapisanych w payloadzie oraz dodaje `<base href="document.baseURI">`, aby ścieżki względne działały zarówno z serwera statycznego, jak i z lokalnego pliku.
+- Renderer używa `contentRect` z payloadu do ustawiania obszaru treści.
+- Font jest ustawiany nazwą wybraną w formularzu z fallbackiem `Calibri, Arial, sans-serif`; brak Google Fonts nie blokuje renderowania.
+- Dokument nie używa Firebase, Firestore, audio, Ping, `onSnapshot`, komunikacji z inną kartą, storage, query/hash ani ręcznego wyboru pliku.
+
+### Zmiana działania przycisku Generuj
+
+- Przed Etapem 4 `Generuj` tylko budował lokalny payload i aktualizował podsumowanie.
+- Po Etapie 4 `Generuj` renderuje podgląd, buduje payload, zapisuje go jako `lastPayload`, pokazuje JSON payloadu w panelu pomocniczym i wywołuje `openOfflineSlate(lastPayload)`.
+- Po sukcesie panel pokazuje komunikat PL/EN: `Karta DataSlate została wygenerowana.` / `DataSlate tab has been generated.`
+- Po blokadzie popupu panel pokazuje komunikat PL/EN: `Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.` / `The browser blocked the new tab. Allow pop-ups for this page and try again.`
+
+### Co działa po Etapie 4
+
+- Panel offline może działać z `assets/data/data.json` przez `fetch` na serwerze statycznym.
+- Panel offline może działać z embedded fallbackiem, gdy `fetch` jest niedostępny w trybie `file://`.
+- `Generuj` otwiera nową kartę z gotowym, statycznym ekranem DataSlate zawierającym tło, treść, opcjonalne logo, kolory, fillery, font/fallback i pozycjonowanie przez `contentRect`.
+- `index_backup.html` i `index_test.html` są zsynchronizowane z `index.html`.
+
+### Co pozostaje do Etapu 5
+
+- Dalsze dopracowanie wierności wizualnej względem finalnego renderera online.
+- Ewentualne dokładniejsze odwzorowanie efektów wizualnych, masek, ramek i typografii z pełnego DataSlate.
+- Ręczne testy wizualne w rzeczywistej przeglądarce na systemie użytkownika, szczególnie dla scenariusza `file://` z dysku `C:\`.
+- Decyzja, czy robocze podsumowanie payloadu pozostaje widoczne w panelu użytkownika.
+
+### Zmienione pliki
+
+- `DataSlate_Offline/index.html` — hybrydowe ładowanie danych, embedded fallback, finalne generowanie nowej karty, renderer HTML i nowe komunikaty PL/EN.
+- `DataSlate_Offline/index_backup.html` — zsynchronizowana kopia `index.html` po Etapie 4.
+- `DataSlate_Offline/index_test.html` — zsynchronizowana kopia `index.html` po Etapie 4.
+- `DataSlate_Offline/tools/update_embedded_data.py` — nowe narzędzie aktualizujące embedded data i synchronizujące kopie HTML.
+- `DataSlate_Offline/Offline.md` — niniejsza sekcja dokumentująca Etap 4.
+
+### Testy/sprawdzenia
+
+- `git status --short` przed zmianami — sprawdzono stan repozytorium; brak wcześniejszych zmian roboczych.
+- `find DataSlate_Offline -maxdepth 4 -type f | sort` — przejrzano strukturę modułu i potwierdzono obecność danych oraz plików referencyjnych.
+- `find . -path './.git' -prune -o -type f \( -name '*.js' -o -name '*.py' -o -name '*.sh' -o -name 'package.json' \) -print | sort` — nie znaleziono istniejącego narzędzia generującego `data.json` z XLSX.
+- `python3 -m json.tool DataSlate_Offline/assets/data/data.json >/tmp/data-json-ok` — `data.json` jest poprawnym JSON-em.
+- `python3 DataSlate_Offline/tools/update_embedded_data.py` — skrypt odświeżył embedded data oraz zsynchronizował `index_backup.html` i `index_test.html`.
+- Skrypt z `HTMLParser` i `json.loads(...)` — embedded data w `index.html`, `index_backup.html` i `index_test.html` są poprawnym JSON-em i odpowiadają `assets/data/data.json`.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_backup.html` — backup jest zsynchronizowany.
+- `cmp -s DataSlate_Offline/index.html DataSlate_Offline/index_test.html` — plik testowy jest zsynchronizowany.
+- `python3 - <<'PY' ... HTMLParser ... PY` — statyczna walidacja HTML przetworzyła `index.html`, `index_backup.html` i `index_test.html` bez błędu parsera.
+- `node --check /tmp/index-script.js` — wyodrębniony skrypt JavaScript z `index.html` nie ma błędów składni.
+- `python3 -m py_compile DataSlate_Offline/tools/update_embedded_data.py` — narzędzie Python kompiluje się poprawnie.
+- `rg -n "Firebase|Firestore|onSnapshot|currentRef\.set|dataslate/current|config/firebase-config\.js" DataSlate_Offline/index.html || true` — brak zakazanych odwołań w aktywnym `index.html`.
+- `rg -n "localStorage|sessionStorage|postMessage|location\.hash|location\.search|URLSearchParams" DataSlate_Offline/index.html || true` — brak zakazanych mechanizmów payloadu w aktywnym `index.html`.
+- `rg -n "SheetJS|XLSX|xlsx" DataSlate_Offline/index.html || true` — brak SheetJS i runtime’owego parsowania XLSX w aktywnym `index.html`.
+- `rg -n "function openOfflineSlate\(payload\)|function buildOfflineSlateHTML\(payload\)" DataSlate_Offline/index.html` — potwierdzono istnienie obu funkcji.
+- `git diff --name-only -- DataSlate` — brak zmian w chronionym folderze `DataSlate/`.
+- Testu browser/file:// w rzeczywistej przeglądarce nie wykonano w środowisku Codex. Zalecany test ręczny: otworzyć `DataSlate_Offline/index.html` z dysku `C:\`, kliknąć `Generuj`, potwierdzić nową kartę z tłem, treścią, logo/fallbackiem i pozycjonowaniem `contentRect`; następnie powtórzyć przez lokalny serwer statyczny.
+
+### Ryzyka i następne kroki
+
+- Pełna wierność względem renderera online wymaga Etapu 5 i testów wizualnych.
+- W części przeglądarek `file://` może mieć różne reguły bazowych ścieżek assetów; dodano `<base href="document.baseURI">`, ale scenariusz powinien zostać potwierdzony ręcznie na docelowym systemie.
+- Jeżeli zmieni się `DataSlate_manifest.xlsx`, trzeba najpierw zaktualizować `assets/data/data.json` dotychczasowym lub osobnym procesem, a następnie uruchomić `python3 DataSlate_Offline/tools/update_embedded_data.py`.
+- Po ręcznym potwierdzeniu Etapu 4 można przejść do Etapu 5.
