@@ -68,24 +68,6 @@ DataSlate_Offline/docs/Documentation.md
 
 ---
 
-## Documentation standard
-
-Repository documentation should follow:
-
-```text
-docs-standard.md
-```
-
-General rules:
-
-- documentation is English-only,
-- do not maintain duplicated EN/PL sections in the same file,
-- do not store private Firebase values, passwords, service account keys, tokens, or production URLs in documentation,
-- describe DEMO/public placeholders as placeholders,
-- document Firebase only for modules that actually use Firebase,
-- keep online and offline DataSlate behavior clearly separated.
-
----
 
 ## Security notes
 
