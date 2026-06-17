@@ -131,4 +131,4 @@ Each group should use its own Firebase project or clearly separated Firestore pa
 | --- | --- |
 | `DataSlate/docs/Documentation.md` | Technical architecture and maintenance guide. |
 | `DataSlate/config/FirebaseREADME.md` | Firebase setup guide. |
-| `docs-standard.md` | Repository documentation standard. |
+| `DataSlate_Offline/docs/README.md` | Offline DataSlate user guide. |
