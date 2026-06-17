@@ -133,10 +133,3 @@ Keep assets in the module folder so the offline page can load them without exter
 | `DataSlate_Offline/docs/Documentation.md` | Technical architecture and maintenance guide. |
 | `DataSlate/docs/README.md` | Online DataSlate user guide. |
 | `DataSlate/config/FirebaseREADME.md` | Firebase setup for online DataSlate. |
-| `docs-standard.md` | Repository documentation standard. |# DataSlate Offline docs
-
-The current user guide is `DataSlate_Offline/README.md`.
-
-Use `DataSlate_Offline/index.html` as the active application. The module is an offline/static DataSlate screen generator: it builds a local payload, renders the Working preview with the same renderer used by the final tab, and opens the final screen after **Generate** / **Generuj**.
-
-There is no Firebase/Firestore setup, no online receiver screen, no legacy Send/Wyślij or Ping workflow, and no audio playback requirement.
